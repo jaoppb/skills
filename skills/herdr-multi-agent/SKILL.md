@@ -1,6 +1,6 @@
 ---
 name: herdr-multi-agent
-description: "Coordinate several Claude agents through Herdr: one worktree and one agent per task, every agent starting with a grill-me session, a coordinator that always plans the tasks in waves to avoid conflicts, review by sub-agents until approved before any merge, a tagged reporting protocol and a go/hold rule. Use only when the user asks to start, organize or coordinate multiple agents or worktrees with Herdr, alongside the herdr skill. Requires HERDR_ENV=1."
+description: "Coordinate several autonomous coding agents (Claude, Antigravity, and others) through Herdr: one worktree and one agent per task, every agent starting with a grill-me session, a coordinator that always plans the tasks in waves to avoid conflicts, review by sub-agents until approved before any merge, a tagged reporting protocol and a go/hold rule. Use only when the user asks to start, organize or coordinate multiple agents or worktrees with Herdr, alongside the herdr skill. Requires HERDR_ENV=1."
 ---
 
 # Herdr multi-agent coordination

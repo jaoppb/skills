@@ -6,7 +6,7 @@ Put this in every worker's prompt, with the coordinator's pane id:
    - `idle` or `done`: send.
    - `working`: `herdr agent wait <coordinator-pane> --timeout 120000`, then check again.
    - `blocked` (a question dialog is open for the person): never send and never press a key to it. Check again, and after three checks tell the person in your own pane instead.
-2. Send with `herdr agent prompt <coordinator-pane> "<message>"` (no `--wait`), then `herdr agent send-keys <coordinator-pane> enter`. Never send keys to the coordinator for any other purpose. A stray enter on a dialog picks its first option, which can answer the person's question for them.
+2. Send with `herdr agent prompt <coordinator-pane> "<message>"` (no `--wait`), which natively submits text and Enter. Never blindly send keys or Enter to the coordinator pane. A stray Enter on a dialog picks its first option, which can accidentally answer the person's question for them.
 3. One tagged paragraph per event, no progress chatter:
    - `[DONE <task>]`: finished, committed, pushed, and PR created; PR URL, branch, approved HEAD commit, check result, and a Review paragraph ("Review: approved in round N", findings fixed, rejected and deferred per round; see [review.md](review.md)).
    - `[BLOCKED <task>]`: cannot continue, and on what.

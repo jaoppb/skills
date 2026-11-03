@@ -5,7 +5,6 @@
 ![Standard](https://img.shields.io/badge/Standard-agentskills.io-blue.svg)
 ![Claude Code](https://img.shields.io/badge/Agent-Claude_Code-D97706.svg)
 ![Gemini CLI / Antigravity](https://img.shields.io/badge/Agent-Gemini_CLI-4285F4.svg)
-![GitHub Copilot](https://img.shields.io/badge/Agent-GitHub_Copilot-181717.svg)
 ![Cursor](https://img.shields.io/badge/Agent-Cursor-000000.svg)
 
 <h3>jaoppb Agent Skills</h3>

@@ -1,0 +1,8 @@
+# Topology
+
+1. One Herdr worktree per task, created from the **primary** workspace (the repo parent, not a linked worktree: from a linked one `herdr worktree create` fails with `linked_worktree_source`; find the primary with `herdr worktree list`, field `source_workspace_id`):
+   `herdr worktree create --workspace <primary> --branch <type>/<id> --base main --label <type>-<id> --no-focus`. The label names the workspace, so use the branch with the slash as a dash (`feat-232` for `feat/232`), never the repository name; rename an existing one with `herdr workspace rename <workspace-id> <type>-<id>`.
+2. One agent per worktree pane: `herdr agent start <name> --kind claude --pane <pane-id>`. Take every id from the JSON that the previous command returned; create one task at a time. A helper script that loops is fine, but pass arguments explicitly (`spawn.sh feat 68`): zsh does not word-split an unquoted `$var`, so `for a in "feat 68"; do spawn.sh $a` passes one argument.
+3. `herdr agent start` can fail with `timed out waiting for agent startup`. Read the pane (`herdr pane read <pane> --source visible`) to see whether the shell is at a clean prompt, then retry with a longer `--timeout 90000`. Old output or a half-typed command above the prompt does not matter; a pane stuck in a running command does.
+4. Names: Herdr agent names (`[a-z][a-z0-9_-]{0,31}`) are not the same as the session names that `SendMessage` and `ListAgents` use. Use `herdr agent list` for Herdr names and `ListAgents` for session names; write both down.
+5. A finished task's worktree can disappear after its merge. Check that a path or an agent still exists (`agent_not_found`, a failed `cd`) before assuming state.

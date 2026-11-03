@@ -1,0 +1,9 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Dependencies & temporary files
+node_modules/
+*.log
+*.bak
+.bak/

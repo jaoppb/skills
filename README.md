@@ -41,6 +41,9 @@ npx skills add jaoppb/skills -g
 # Install herdr multi-agent coordination
 npx skills add jaoppb/skills --skill herdr-multi-agent -g
 
+# Install grill-me interrogation
+npx skills add jaoppb/skills --skill grill-me -g
+
 # Install herdr CLI integration
 npx skills add jaoppb/skills --skill herdr -g
 
@@ -56,6 +59,7 @@ npx skills add jaoppb/skills --skill thermo-nuclear-code-quality-review -g
 | :--- | :--- | :--- |
 | [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md) | Coordinates multiple agents in parallel across separate Git worktrees using [Herdr](https://herdr.dev). Enforces wave planning, mandatory initial grilling (`/grill-me`), strict quality review loops, and automated PR creation. | Root `SKILL.md` + 10 modular reference runbooks under `references/`. |
 | [`herdr`](./skills/herdr/SKILL.md) | Inspects and controls panes, tabs, workspaces, and agents running under the Herdr workspace manager via the `herdr` CLI. | Standalone `SKILL.md`. |
+| [`grill-me`](./skills/grill-me/SKILL.md) | Interrogates a spec, plan, or design one hard question at a time to expose gaps and undecided trade-offs, then writes the decisions back. Used by every `herdr-multi-agent` worker at startup. | Standalone `SKILL.md`. |
 | [`thermo-nuclear-code-quality-review`](./skills/thermo-nuclear-code-quality-review/SKILL.md) | High-rigor, unsparing maintainability and structural review. Identifies architectural leaks, spaghetti conditionals, bloated files, and enforces code simplicity. | Standalone `SKILL.md`. |
 
 ---
@@ -64,6 +68,8 @@ npx skills add jaoppb/skills --skill thermo-nuclear-code-quality-review -g
 
 ```text
 skills/
+├── grill-me/
+│   └── SKILL.md
 ├── herdr/
 │   └── SKILL.md
 ├── herdr-multi-agent/

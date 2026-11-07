@@ -49,6 +49,9 @@ npx skills add jaoppb/skills --skill herdr -g
 
 # Install thermo-nuclear code quality review
 npx skills add jaoppb/skills --skill thermo-nuclear-code-quality-review -g
+
+# Install codebase audit
+npx skills add jaoppb/skills --skill codebase-audit -g
 ```
 
 ---
@@ -61,6 +64,7 @@ npx skills add jaoppb/skills --skill thermo-nuclear-code-quality-review -g
 | [`herdr`](./skills/herdr/SKILL.md) | Inspects and controls panes, tabs, workspaces, and agents running under the Herdr workspace manager via the `herdr` CLI. | Standalone `SKILL.md`. |
 | [`grill-me`](./skills/grill-me/SKILL.md) | Interrogates a spec, plan, or design one hard question at a time to expose gaps and undecided trade-offs, then writes the decisions back. Used by every `herdr-multi-agent` worker at startup. | Standalone `SKILL.md`. |
 | [`thermo-nuclear-code-quality-review`](./skills/thermo-nuclear-code-quality-review/SKILL.md) | High-rigor, unsparing maintainability and structural review. Identifies architectural leaks, spaghetti conditionals, bloated files, and enforces code simplicity. | Standalone `SKILL.md`. |
+| [`codebase-audit`](./skills/codebase-audit/SKILL.md) | Audits a whole repository for smells, architecture, testing, security and tooling gaps by fanning work out to subagents, then produces a prioritized, issue-ready report. | Root `SKILL.md` + `references/` guides (generic, Rust, TypeScript/Next.js/React) + `scripts/`. |
 
 ---
 
@@ -68,6 +72,10 @@ npx skills add jaoppb/skills --skill thermo-nuclear-code-quality-review -g
 
 ```text
 skills/
+├── codebase-audit/
+│   ├── SKILL.md
+│   ├── references/
+│   └── scripts/
 ├── grill-me/
 │   └── SKILL.md
 ├── herdr/

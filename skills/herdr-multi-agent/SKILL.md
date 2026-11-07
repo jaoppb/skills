@@ -17,7 +17,7 @@ Lessons from running a coordinator agent and several worker agents, one per task
 
 1. **Every worker grills first.** Each worker's first prompt makes it read the task and then run `/grill-me` with the person in its own pane, before any analysis, plan or code. No exceptions per task. See [references/grilling.md](references/grilling.md).
 2. **The coordinator always organizes the tasks in waves before spawning anything**, predicting dependency and file overlap, and confirms the plan with the person. Never start all tasks at once without it. Implementation goes only to the wave whose blockers and overlapping tasks are merged. See [references/waves.md](references/waves.md).
-3. **Every worker's work is reviewed until a review approves, then automatically creates the PR.** Before `[DONE]`, the worker dispatches a new sub-agent per round to run `/thermo-nuclear-code-quality-review` on its branch diff, fixes the real findings and repeats until a round returns no blocker and no material finding; no fixed round count. Once approved and checks pass, the worker automatically pushes the branch and creates the pull request via `gh pr create`, then reports `[DONE]` with the PR URL and "Review: approved in round N". The coordinator monitors CI and presents it for merge authorization. See [references/review.md](references/review.md).
+3. **Every worker's work is reviewed until a review approves, then automatically creates the PR.** Before `[DONE]`, the worker dispatches a new sub-agent per round to run `/thermo-nuclear-code-quality-review` on its branch diff, fixes the real findings and repeats until a round returns no blocker and no material finding; no fixed round count. Once approved and checks pass, the worker automatically pushes the branch and creates the pull request via `gh pr create`, then reports `[DONE]` with the PR URL and "Review: approved in round N". The coordinator monitors CI and presents it for merge authorization. Tasks tagged `ui: yes` at wave planning also get a front-end review sub-agent each round. See [references/review.md](references/review.md).
 
 ## Workflow
 
@@ -39,6 +39,7 @@ Lessons from running a coordinator agent and several worker agents, one per task
 | [references/topology.md](references/topology.md) | Creating worktrees and agents, names, startup failures |
 | [references/worker-prompts.md](references/worker-prompts.md) | Sending prompts, reading workers, first-prompt checklist |
 | [references/review.md](references/review.md) | The review loop: new sub-agent per round until approved, and what the coordinator checks |
+| [references/review-frontend.md](references/review-frontend.md) | Extra Impeccable review lens, read only for `ui: yes` tasks |
 | [references/reporting-protocol.md](references/reporting-protocol.md) | Worker to coordinator messages and tags |
 | [references/coordinator-rules.md](references/coordinator-rules.md) | Verification, merging, decisions with the person |
 | [references/cleanup.md](references/cleanup.md) | Removing finished worktrees and branches with proof |

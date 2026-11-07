@@ -4,7 +4,7 @@
 
 1. Say what to do first (for example `git fetch origin && git rebase origin/main`), then the scope, then where to stop. Workers automatically push and create the pull request once their review approves, then stop for merge.
 2. `herdr agent prompt <name> "<text>"` natively submits text and Enter. Check with `herdr agent get <name>` that the agent transitioned to `working`. Only send `herdr agent send-keys <name> enter` if inspection shows the prompt text remained pasted but unsubmitted in the pane (and ensure the agent is not `blocked` on a dialog before sending keys).
-3. Do not use `--wait` when the target is yourself or when you do not want to block.
+3. Do not use `agent prompt --wait`. After sending, wait with `herdr agent wait <name> --until ... --timeout <ms>` as in [reporting-protocol.md](reporting-protocol.md#waiting-between-agents-always-herdr-agent-wait---until), and never on yourself.
 4. Do not send a prompt to an agent that is `blocked` on a dialog: read its screen and ask the person first.
 
 ## Reading a worker

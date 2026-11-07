@@ -24,7 +24,7 @@ Lessons from running a coordinator agent and several worker agents, one per task
 1. Read the tasks (issue bodies, dependencies, the code they touch) and plan the waves: [references/waves.md](references/waves.md).
 2. Create one worktree and one agent per task: [references/topology.md](references/topology.md).
 3. Send each worker its first prompt, grill included: [references/worker-prompts.md](references/worker-prompts.md).
-4. Workers report with the tagged protocol, and always check that the coordinator is not on a dialog first: [references/reporting-protocol.md](references/reporting-protocol.md).
+4. Workers report with the tagged protocol, always check that the coordinator is not on a dialog first, and every wait between agents uses `herdr agent wait --until`: [references/reporting-protocol.md](references/reporting-protocol.md).
 5. After the grills, re-check the wave plan against the files each worker expects to touch, then send go messages wave by wave, as the person merges.
 6. Workers review their branch until approved: [references/review.md](references/review.md).
 7. Handle reports, merges and questions: [references/coordinator-rules.md](references/coordinator-rules.md).

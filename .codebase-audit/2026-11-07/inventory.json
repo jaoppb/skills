@@ -1,0 +1,64 @@
+{
+  "repo_root": "/home/user/skills",
+  "repo_name": "skills",
+  "date": "2026-11-07",
+  "git": {
+    "sha": "49905e8",
+    "churn_top": []
+  },
+  "totals": {
+    "loc": 0,
+    "code_files": 0,
+    "source_files": 0,
+    "test_files": 0,
+    "test_to_source_file_ratio": null,
+    "generated_files_excluded": 0
+  },
+  "languages": [],
+  "languages_without_reference": [],
+  "tests": {},
+  "packages": [],
+  "configs": {
+    "ci": [],
+    "lint": [],
+    "format": [],
+    "typecheck": [],
+    "toolchain": [],
+    "test_config": [],
+    "coverage": [],
+    "deps_automation": [],
+    "security": [],
+    "containers": [],
+    "docs": [
+      "README.md"
+    ],
+    "adr": [],
+    "env_example": [],
+    "env_committed": [],
+    "git": [
+      ".gitignore"
+    ],
+    "hooks": [],
+    "monorepo": [],
+    "lockfiles": []
+  },
+  "missing_configs": [
+    "ci",
+    "containers",
+    "coverage",
+    "deps_automation",
+    "env_example",
+    "format",
+    "hooks",
+    "lint",
+    "lockfiles",
+    "security",
+    "test_config",
+    "toolchain",
+    "typecheck"
+  ],
+  "largest_files": [],
+  "generated_files_sample": [],
+  "partitions": [],
+  "partition_target_loc": 6000
+}

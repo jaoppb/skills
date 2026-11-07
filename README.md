@@ -54,7 +54,7 @@ npx skills add jaoppb/skills --skill thermo-nuclear-code-quality-review -g
 
 | Skill | Description & Primary Trigger | Structure |
 | :--- | :--- | :--- |
-| [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md) | Coordinates multiple agents in parallel across separate Git worktrees using [Herdr](https://herdr.dev). Enforces wave planning, mandatory initial grilling (`/grill-me`), strict quality review loops, and automated PR creation. | Root `SKILL.md` + 9 modular reference runbooks under `references/`. |
+| [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md) | Coordinates multiple agents in parallel across separate Git worktrees using [Herdr](https://herdr.dev). Enforces wave planning, mandatory initial grilling (`/grill-me`), strict quality review loops, and automated PR creation. | Root `SKILL.md` + 10 modular reference runbooks under `references/`. |
 | [`herdr`](./skills/herdr/SKILL.md) | Inspects and controls panes, tabs, workspaces, and agents running under the Herdr workspace manager via the `herdr` CLI. | Standalone `SKILL.md`. |
 | [`thermo-nuclear-code-quality-review`](./skills/thermo-nuclear-code-quality-review/SKILL.md) | High-rigor, unsparing maintainability and structural review. Identifies architectural leaks, spaghetti conditionals, bloated files, and enforces code simplicity. | Standalone `SKILL.md`. |
 
@@ -69,6 +69,7 @@ skills/
 ├── herdr-multi-agent/
 │   ├── SKILL.md
 │   └── references/
+│       ├── agent-effort.md
 │       ├── cleanup.md
 │       ├── coordinator-rules.md
 │       ├── grilling.md

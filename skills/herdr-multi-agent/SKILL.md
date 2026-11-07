@@ -22,7 +22,7 @@ Lessons from running a coordinator agent and several worker agents, one per task
 ## Workflow
 
 1. Read the tasks (issue bodies, dependencies, the code they touch) and plan the waves: [references/waves.md](references/waves.md).
-2. Create one worktree and one agent per task: [references/topology.md](references/topology.md).
+2. Create one worktree and one agent per task, choosing the agent and effort from [references/agent-effort.md](references/agent-effort.md): [references/topology.md](references/topology.md).
 3. Send each worker its first prompt, grill included: [references/worker-prompts.md](references/worker-prompts.md).
 4. Workers report with the tagged protocol, always check that the coordinator is not on a dialog first, and every wait between agents uses `herdr agent wait --until`: [references/reporting-protocol.md](references/reporting-protocol.md).
 5. After the grills, re-check the wave plan against the files each worker expects to touch, then send go messages wave by wave, as the person merges.
@@ -36,6 +36,7 @@ Lessons from running a coordinator agent and several worker agents, one per task
 |------|---------|
 | [references/waves.md](references/waves.md) | Planning waves, overlap prediction, go messages, re-checking with real diffs |
 | [references/grilling.md](references/grilling.md) | The grill every worker starts with |
+| [references/agent-effort.md](references/agent-effort.md) | Which agent and effort level for coordinators and workers |
 | [references/topology.md](references/topology.md) | Creating worktrees and agents, names, startup failures |
 | [references/worker-prompts.md](references/worker-prompts.md) | Sending prompts, reading workers, first-prompt checklist |
 | [references/review.md](references/review.md) | The review loop: new sub-agent per round until approved, and what the coordinator checks |

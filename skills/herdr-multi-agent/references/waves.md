@@ -7,7 +7,8 @@ The coordinator always plans waves before it spawns agents or sends any go messa
 1. List the tasks and read each issue body, its dependencies and the code areas it names (screens, wiring traits, error enums, design docs, the shared plan, migrations).
 2. Predict the **file overlap**: two tasks that touch the same module, screen or document cannot be in the same implementation wave. Use the issue text, `docs/design/` and a quick search of the code to find the likely files. When unsure, treat tasks of the same area as overlapping.
 3. Assign waves: dependency order first (a blocked task is in a later wave), then overlap (of two overlapping tasks, the one on the critical path or with more dependents goes first). Tasks with no dependency and no overlap share a wave.
-4. Show the wave plan to the person (tasks per wave, why each split) and get it confirmed before the first go message.
+4. Tag each task `ui: yes` or `ui: no` (from the issue body and the predicted files; any user-facing interface counts, web or not). The tag decides whether the worker gets the front-end review lens ([review-frontend.md](review-frontend.md)). Retag when a worker sends `[TREE]` about UI files in a `ui: no` diff.
+5. Show the wave plan to the person (tasks per wave, why each split, each task's `ui` tag) and get it confirmed before the first go message.
 
 ## Running the waves
 

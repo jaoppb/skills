@@ -71,6 +71,11 @@ or the module boundaries comes before one that changes a default value.
 - **Restate every answer as a decision** before the next question: "So: sources are
   ordered, first match wins, and a dead source is skipped silently. Next —". This is
   how you catch a misunderstanding while it's still cheap.
+- **Confirm decisions with `AskUserQuestion`, not prose.** Prefer the built-in ask
+  tool over typing "is that right?" in chat. Put the restated decision in the
+  question, offer options like "Confirmed", "Adjust it" (and a concrete alternative
+  when one exists), and let the user pick. Fall back to plain prose only when the
+  tool is unavailable or the decision is too open-ended to enumerate.
 - **Follow the blood.** When an answer opens a bigger hole than the one you were
   probing, abandon the backlog and chase it.
 - Roughly 5–10 questions is a real grilling. Stop when the remaining backlog only

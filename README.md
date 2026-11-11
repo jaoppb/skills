@@ -52,6 +52,9 @@ npx skills add jaoppb/skills --skill thermo-nuclear-code-quality-review -g
 
 # Install codebase audit
 npx skills add jaoppb/skills --skill codebase-audit -g
+
+# Install SPDD bootstrap (generates project-tailored spdd-* skills)
+npx skills add jaoppb/skills --skill spdd-bootstrap -g
 ```
 
 ---
@@ -65,6 +68,7 @@ npx skills add jaoppb/skills --skill codebase-audit -g
 | [`grill-me`](./skills/grill-me/SKILL.md) | Interrogates a spec, plan, or design one hard question at a time to expose gaps and undecided trade-offs, then writes the decisions back. Used by every `herdr-multi-agent` worker at startup. | Standalone `SKILL.md`. |
 | [`thermo-nuclear-code-quality-review`](./skills/thermo-nuclear-code-quality-review/SKILL.md) | High-rigor, unsparing maintainability and structural review. Identifies architectural leaks, spaghetti conditionals, bloated files, and enforces code simplicity. | Standalone `SKILL.md`. |
 | [`codebase-audit`](./skills/codebase-audit/SKILL.md) | Audits a whole repository for smells, architecture, testing, security and tooling gaps by fanning work out to subagents, then produces a prioritized, issue-ready report. | Root `SKILL.md` + `references/` guides (generic, Rust, TypeScript/Next.js/React) + `scripts/`. |
+| [`spdd-bootstrap`](./skills/spdd-bootstrap/SKILL.md) | Generates, once per repository, SPDD skills (`spdd-analysis`, `spdd-reasons-canvas`, `spdd-generate`, `spdd-prompt-update`, plus `spdd-sync` when canvases are committed) tailored to that project's rules, architecture, check command and tracker. | Root `SKILL.md` + `references/` (profile, decisions, rendering, Cosmo worked example, `templates/`) + `scripts/render.py`. |
 
 ---
 
@@ -93,6 +97,21 @@ skills/
 │       ├── topology.md
 │       ├── waves.md
 │       └── worker-prompts.md
+├── spdd-bootstrap/
+│   ├── SKILL.md
+│   ├── scripts/
+│   │   └── render.py
+│   └── references/
+│       ├── decisions.md
+│       ├── example-cosmo.md
+│       ├── profile.md
+│       ├── rendering.md
+│       └── templates/
+│           ├── spdd-analysis.md
+│           ├── spdd-generate.md
+│           ├── spdd-prompt-update.md
+│           ├── spdd-reasons-canvas.md
+│           └── spdd-sync.md
 └── thermo-nuclear-code-quality-review/
     └── SKILL.md
 ```

@@ -29,6 +29,7 @@ Existing skills in this repo:
 - [`grill-me`](./skills/grill-me/SKILL.md): Interrogates a spec, plan, or design one question at a time and writes the decisions back.
 - [`herdr`](./skills/herdr/SKILL.md): Standalone control of Herdr terminal multiplexer via CLI.
 - [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md): Coordinator and worker agent patterns across Herdr worktrees. Uses modular guides in `references/`.
+- [`spdd-bootstrap`](./skills/spdd-bootstrap/SKILL.md): Generates project-tailored SPDD skills (analysis, REASONS canvas, generate, prompt-update, and sync when canvases are committed) from templates in `references/templates/`, rendered by `scripts/render.py`.
 - [`thermo-nuclear-code-quality-review`](./skills/thermo-nuclear-code-quality-review/SKILL.md): Unsparing code maintainability and architectural review.
 
 ---

@@ -10,3 +10,4 @@ node_modules/
 
 # Local audit output
 .codebase-audit/
+__pycache__/

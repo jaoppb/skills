@@ -2,15 +2,34 @@
 
 Which agent and effort level to start for each kind of task. Use it in [topology.md](topology.md) when creating agents.
 
+## Default (Preset 3: Coordinator = Middle, Worker = Top)
+
 | Role | Family (`--kind`) | Agent | Effort | Start args (after `--`) |
 |------|-------------------|-------|--------|-------------------------|
-| Coordinator | `claude` | Claude Fable 5.2 | medium | `--model claude-fable-5-2 --effort medium` |
+| Coordinator | `claude` | Claude Opus 5.5 | medium | `--model claude-opus-5-5 --effort medium` |
 | Coordinator | `agy` | Gemini 4 Argon | medium | `--model gemini-4-argon-medium` |
-| Worker | `claude` | Claude Opus 5.5 | medium | `--model claude-opus-5-5 --effort medium` |
-| Worker | `agy` | Gemini 4 Hydrogen | medium | `--model gemini-4-hydrogen-medium` |
+| Worker | `claude` | Claude Fable 5.2 | medium | `--model claude-fable-5-2 --effort medium` |
+| Worker | `agy` | Gemini 4 Carbon | medium | `--model gemini-4-carbon-medium` |
 
-- Coordinator and worker are different roles: the coordinator plans waves, overlap and merges (Fable 5.2 or Argon), a worker implements one task (Opus 5.5 or Hydrogen). Every default runs at medium effort.
+## Tier hierarchy and selectable presets
+
+Model tiers from highest to lowest (all run at `medium` effort by default):
+
+- **Top:** `Claude Fable 5.2` (`claude-fable-5-2`) / `Gemini 4 Carbon` (`gemini-4-carbon-medium`)
+- **Middle:** `Claude Opus 5.5` (`claude-opus-5-5`) / `Gemini 4 Argon` (`gemini-4-argon-medium`)
+- **Fast:** `Claude Sonnet 4.6` (`claude-sonnet-4-6`) / `Gemini 4 Hydrogen` (`gemini-4-hydrogen-medium`)
+
+The person can pick any preset below; **Preset 3** is the default:
+
+| Preset | Coordinator -> Worker | `claude` (Coordinator / Worker) | `agy` (Coordinator / Worker) |
+|--------|-----------------------|---------------------------------|------------------------------|
+| 1 | Top -> Middle | `claude-fable-5-2` / `claude-opus-5-5` (`--effort medium`) | `gemini-4-carbon-medium` / `gemini-4-argon-medium` |
+| 2 | Middle -> Fast | `claude-opus-5-5` / `claude-sonnet-4-6` (`--effort medium`) | `gemini-4-argon-medium` / `gemini-4-hydrogen-medium` |
+| **3 (default)** | Middle -> Top | `claude-opus-5-5` / `claude-fable-5-2` (`--effort medium`) | `gemini-4-argon-medium` / `gemini-4-carbon-medium` |
+| 4 (asymmetric) | `claude`: Top -> Middle; `agy`: Middle -> Fast | `claude-fable-5-2` / `claude-opus-5-5` (`--effort medium`) | `gemini-4-argon-medium` / `gemini-4-hydrogen-medium` |
+
+- Coordinator and worker are different roles: by default (Preset 3), the coordinator plans waves, overlap and merges on the middle tier (`Opus 5.5` or `Argon`), and each worker implements one task on the top tier (`Fable 5.2` or `Carbon`). Every preset runs at `medium` effort.
 - A worker is always of the same family as its coordinator: take the worker row whose `--kind` matches the coordinator's ([topology.md](topology.md)).
 - `agy` encodes the effort in the model id (list them with `agy models`), so its rows carry no `--effort`.
 - Sub-agents dispatched by a worker for review follow the worker's agent family and effort unless the person says otherwise.
-- The person can override any row; say so in the first prompt so the worker does not assume the default.
+- The person can override the preset (1–4) or any individual row; say so in the first prompt so the worker does not assume the default.

@@ -2,18 +2,21 @@
 """Merge reviewer findings into a report and issue-ready files.
 
 Usage:
-    python3 merge_findings.py <audit-dir>
+    python3 merge_findings.py <audit-dir> [--groups <merge-groups.json>]
 
-Reads   <audit-dir>/findings/*.json  (+ optional <audit-dir>/inventory.json)
+Reads   <audit-dir>/findings/*.json  (+ optional <audit-dir>/inventory.json,
+                                        optional <audit-dir>/merge-groups.json)
 Writes  <audit-dir>/report.md
         <audit-dir>/issues.json
         <audit-dir>/issues/AUD-xxx.md
+        <audit-dir>/merges.md
         <audit-dir>/validation.md   (only if some findings were malformed)
 
 Standard library only. See references/finding-format.md for the input schema.
 """
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import sys
@@ -30,6 +33,8 @@ CATEGORIES = {"architecture", "maintainability", "code-smell", "error-handling",
               "tooling", "observability", "documentation", "accessibility"}
 RULE_RE = re.compile(r"^[A-Z]+-\d{3}$")
 MAX_LOCATIONS = 10
+COMMON_RULE_THRESHOLD = 5
+ALWAYS_COMMON_RULES = {"GEN-000"}
 
 
 def band(priority: float) -> str:
@@ -150,28 +155,75 @@ def norm_title(t: str) -> str:
     return re.sub(r"[^a-z0-9 ]", "", t.lower()).strip()
 
 
-def overlaps(a: dict, b: dict) -> bool:
-    for la in a["locations"]:
-        for lb in b["locations"]:
-            if la["path"] != lb["path"]:
-                continue
-            if "start_line" not in la or "start_line" not in lb:
-                return True
-            a1, a2 = la["start_line"], la.get("end_line", la["start_line"])
-            b1, b2 = lb["start_line"], lb.get("end_line", lb["start_line"])
-            if a1 <= b2 + 3 and b1 <= a2 + 3:
-                return True
-    return False
-
-
-def same(a: dict, b: dict) -> bool:
-    shared_rule = bool(set(a["rule_ids"]) & set(b["rule_ids"]))
-    if shared_rule and overlaps(a, b):
+def primary_overlaps(la: dict, lb: dict) -> bool:
+    if la["path"] != lb["path"]:
+        return False
+    has_a = "start_line" in la
+    has_b = "start_line" in lb
+    if not has_a and not has_b:
         return True
-    return shared_rule and norm_title(a["title"]) == norm_title(b["title"])
+    if has_a != has_b:
+        return False
+    a1, a2 = la["start_line"], la.get("end_line", la["start_line"])
+    b1, b2 = lb["start_line"], lb.get("end_line", lb["start_line"])
+    return a1 <= b2 + 3 and b1 <= a2 + 3
 
 
-def merge_into(a: dict, b: dict) -> None:
+def orig_signature(f: dict) -> dict:
+    return {
+        "rule_ids": set(f["rule_ids"]),
+        "primary_loc": f["locations"][0] if f["locations"] else None,
+        "norm_title": norm_title(f["title"]),
+    }
+
+
+def same(a_orig: dict, b_orig: dict, common_rules: set[str]) -> str | None:
+    shared_rules = a_orig["rule_ids"] & b_orig["rule_ids"]
+    if not shared_rules:
+        return None
+    specific_rules = shared_rules - common_rules
+    if (
+        specific_rules
+        and a_orig["primary_loc"]
+        and b_orig["primary_loc"]
+        and primary_overlaps(a_orig["primary_loc"], b_orig["primary_loc"])
+    ):
+        return "primary location overlap"
+    if a_orig["norm_title"] == b_orig["norm_title"]:
+        return "exact title"
+    return None
+
+
+def winner_key(f: dict) -> tuple[int, float, int]:
+    prose_len = len(f["evidence"]) + len(f["impact"]) + len(f["recommendation"])
+    return (SEV_W[f["severity"]], CONF_W[f["confidence"]], prose_len)
+
+
+def finding_snapshot(f: dict) -> dict:
+    return {
+        "title": f["title"],
+        "reviewers": list(f["reviewers"]),
+        "severity": f["severity"],
+        "primary_loc": loc_str(f["locations"][0]) if f["locations"] else "-",
+    }
+
+
+def merge_into(a: dict, b: dict, reason: str) -> None:
+    b_wins = winner_key(b) > winner_key(a)
+    if b_wins:
+        a["_folded"].append({**a["_kept"], "reason": reason})
+        a["_folded"].extend(b.get("_folded", []))
+        a["_kept"] = dict(b.get("_kept") or finding_snapshot(b))
+        for key in ("title", "category", "evidence", "impact", "recommendation"):
+            a[key] = b[key]
+        primary_locs = list(b["locations"])
+        secondary_locs = a["locations"]
+    else:
+        a["_folded"].append({**(b.get("_kept") or finding_snapshot(b)), "reason": reason})
+        a["_folded"].extend(b.get("_folded", []))
+        primary_locs = list(a["locations"])
+        secondary_locs = b["locations"]
+
     a["rule_ids"] = sorted(set(a["rule_ids"]) | set(b["rule_ids"]))
     if SEV_W[b["severity"]] > SEV_W[a["severity"]]:
         a["severity"] = b["severity"]
@@ -179,15 +231,14 @@ def merge_into(a: dict, b: dict) -> None:
         a["confidence"] = b["confidence"]
     if EFFORTS.index(b["effort"]) > EFFORTS.index(a["effort"]):
         a["effort"] = b["effort"]
-    seen = {(l["path"], l.get("start_line")) for l in a["locations"]}
-    for l in b["locations"]:
+
+    seen = {(l["path"], l.get("start_line")) for l in primary_locs}
+    for l in secondary_locs:
         if (l["path"], l.get("start_line")) not in seen:
-            a["locations"].append(l)
+            primary_locs.append(l)
             seen.add((l["path"], l.get("start_line")))
+    a["locations"] = primary_locs
     a["occurrences"] = max(a["occurrences"], b["occurrences"], len(a["locations"]))
-    for key in ("evidence", "impact", "recommendation"):
-        if len(b[key]) > len(a[key]):
-            a[key] = b[key]
     for c in b["acceptance_criteria"]:
         if c not in a["acceptance_criteria"]:
             a["acceptance_criteria"].append(c)
@@ -195,18 +246,63 @@ def merge_into(a: dict, b: dict) -> None:
     a["reviewers"] = sorted(set(a["reviewers"]) | set(b["reviewers"]))
 
 
-def dedupe(findings: list[dict]) -> tuple[list[dict], int]:
+def matches_selector(f: dict, sel: object) -> bool:
+    if isinstance(sel, str):
+        prefix = norm_title(sel)
+        return bool(prefix) and norm_title(f["title"]).startswith(prefix)
+    if isinstance(sel, dict):
+        rev = sel.get("reviewer")
+        title = sel.get("title")
+        if rev is not None and str(rev) not in f["reviewers"]:
+            return False
+        if title is not None:
+            prefix = norm_title(str(title))
+            if not prefix or not norm_title(f["title"]).startswith(prefix):
+                return False
+        return rev is not None or title is not None
+    return False
+
+
+def dedupe(
+    findings: list[dict], manual_groups: list[list] | None = None
+) -> tuple[list[dict], int]:
+    rule_counts = Counter(r for f in findings for r in f["rule_ids"])
+    common_rules = {r for r, c in rule_counts.items() if c > COMMON_RULE_THRESHOLD} | ALWAYS_COMMON_RULES
+    groups = manual_groups or []
+
     out: list[dict] = []
     merged = 0
     for f in findings:
+        f["_orig"] = orig_signature(f)
+        f["_kept"] = finding_snapshot(f)
+        f["_folded"] = []
+        f["_group_ids"] = {
+            gid for gid, grp in enumerate(groups) if any(matches_selector(f, sel) for sel in grp)
+        }
         for g in out:
-            if same(f, g):
-                merge_into(g, f)
+            reason = same(f["_orig"], g["_orig"], common_rules)
+            if reason is not None:
+                merge_into(g, f, reason)
+                g["_group_ids"] |= f["_group_ids"]
                 merged += 1
                 break
         else:
             out.append(f)
-    return out, merged
+
+    if not groups:
+        return out, merged
+
+    final: list[dict] = []
+    for f in out:
+        for g in final:
+            if f["_group_ids"] & g["_group_ids"]:
+                merge_into(g, f, "manual group")
+                g["_group_ids"] |= f["_group_ids"]
+                merged += 1
+                break
+        else:
+            final.append(f)
+    return final, merged
 
 
 # ------------------------------------------------------------------------------------------
@@ -387,11 +483,74 @@ def render_report(findings, meta, inventory, problems, merged, today) -> str:
     return "\n".join(out)
 
 
-def main() -> int:
-    if len(sys.argv) != 2:
-        print(__doc__)
-        return 2
-    audit = Path(sys.argv[1]).resolve()
+def load_manual_groups(path: Path | None, problems: list[str]) -> list[list]:
+    if path is None or not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text())
+    except Exception as e:  # noqa: BLE001
+        problems.append(f"{path.name}: invalid JSON ({e}) — manual groups ignored")
+        return []
+    if not isinstance(data, list):
+        problems.append(f"{path.name}: expected a JSON list of groups — ignored")
+        return []
+    groups: list[list] = []
+    for i, grp in enumerate(data):
+        if not isinstance(grp, list) or len(grp) < 2:
+            problems.append(f"{path.name} group #{i + 1}: expected a list of >= 2 selectors — ignored")
+            continue
+        groups.append(grp)
+    return groups
+
+
+def render_merges(findings: list[dict], merged: int) -> str:
+    if merged == 0:
+        return "# Merge log\n\n_No findings merged._\n"
+    survivors = [f for f in findings if f.get("_folded")]
+    out = [
+        "# Merge log",
+        "",
+        f"Merged {merged} duplicate finding(s) into {len(survivors)} surviving finding(s).",
+        "",
+    ]
+    for f in survivors:
+        kept = f.get("_kept") or finding_snapshot(f)
+        out.append(f"## {f['id']} · {f['title']}")
+        out.append("")
+        out.append(
+            f"- **Kept:** {', '.join(kept['reviewers'])} · {kept['severity']} · `{kept['primary_loc']}`"
+        )
+        out.append("- **Folded:**")
+        for m in f["_folded"]:
+            out.append(
+                f"  - `{m['title']}` ({', '.join(m['reviewers'])}, {m['severity']}, "
+                f"`{m['primary_loc']}`) — reason: {m['reason']}"
+            )
+        out.append("")
+    return "\n".join(out)
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Merge codebase-audit reviewer findings into report.md, issues.json, and merges.md."
+    )
+    parser.add_argument("audit_dir", help="Path to the audit directory")
+    parser.add_argument("--groups", help="Optional path to manual merge-groups JSON file")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(argv)
+    audit = Path(args.audit_dir).resolve()
+    groups_path: Path | None = None
+    if args.groups:
+        groups_path = Path(args.groups).resolve()
+        if not groups_path.exists():
+            print(f"error: groups file not found: {groups_path}", file=sys.stderr)
+            return 2
+    elif (audit / "merge-groups.json").exists():
+        groups_path = audit / "merge-groups.json"
+
     inventory = None
     inv_path = audit / "inventory.json"
     if inv_path.exists():
@@ -402,7 +561,8 @@ def main() -> int:
     today = (inventory or {}).get("date") or date.today().isoformat()
 
     findings, meta, problems = load(audit)
-    findings, merged = dedupe(findings)
+    manual_groups = load_manual_groups(groups_path, problems)
+    findings, merged = dedupe(findings, manual_groups)
     for f in findings:
         f["priority"] = round(SEV_W[f["severity"]] * CONF_W[f["confidence"]], 2)
         f["priority_band"] = band(f["priority"])
@@ -433,6 +593,7 @@ def main() -> int:
         })
     (audit / "issues.json").write_text(json.dumps(issues, indent=2) + "\n")
     (audit / "report.md").write_text(render_report(findings, meta, inventory, problems, merged, today))
+    (audit / "merges.md").write_text(render_merges(findings, merged))
     vpath = audit / "validation.md"
     if problems:
         vpath.write_text("# Validation notes\n\n" + "\n".join(f"- {p}" for p in problems) + "\n")
@@ -447,7 +608,7 @@ def main() -> int:
     dropped = sum(1 for p in problems if "DROPPED" in p or "invalid JSON" in p)
     if problems:
         print(f"validation notes: {len(problems)} ({dropped} dropped/unreadable) -> {vpath}")
-    print(f"wrote {audit / 'report.md'}, {audit / 'issues.json'}, {issues_dir}/")
+    print(f"wrote {audit / 'report.md'}, {audit / 'issues.json'}, {audit / 'merges.md'}, {issues_dir}/")
     return 0
 
 

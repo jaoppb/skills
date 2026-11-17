@@ -137,14 +137,16 @@ python3 <skill-dir>/scripts/merge_findings.py <audit-dir>
 ```
 
 It validates every findings file against the schema (reporting malformed entries instead of
-dropping them silently), merges duplicates (same rule + overlapping locations, or same rule + same
-title across reviewers), sorts by priority (severity × confidence, then effort), assigns stable
-IDs (`AUD-001`…), and writes:
+dropping them silently), merges duplicates (shared non-common rule + overlapping primary
+location, shared rule + exact normalized title, or optional `<audit-dir>/merge-groups.json` /
+`--groups`), sorts by priority (severity × confidence, then effort), assigns stable IDs
+(`AUD-001`…), and writes:
 
 - `<audit-dir>/report.md` — full report skeleton (see `references/report-template.md`)
 - `<audit-dir>/issues.json` — one object per finding, issue-ready (title, body, labels, severity,
   effort, locations)
 - `<audit-dir>/issues/AUD-xxx.md` — one markdown file per issue body, ready to paste or script
+- `<audit-dir>/merges.md` — merge log listing which findings were folded into which survivor and why
 
 Then do the judgment work the script can't:
 

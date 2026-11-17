@@ -60,9 +60,19 @@ or the module boundaries comes before one that changes a default value.
 - **One question at a time.** Wait for the answer. A wall of twelve questions gets
   one shallow reply; a single sharp question gets a decision.
 - **No compound questions.** One decision per question.
-- Use `AskUserQuestion` when the real answers are a small enumerable set, and make
-  the options concrete design choices with their consequences spelled out. Use plain
-  prose for genuinely open questions.
+- Use the host's built-in blocking ask tool when available and the real answers are a
+  small enumerable set: `AskUserQuestion` on `claude`, `ask_question` on `agy`. Make
+  the options concrete design choices with their trade-offs and consequences spelled
+  out, and **always include a recommended option** (on `agy`, place it first, prefixed
+  with `(Recommended)`). Use plain prose for genuinely open questions, or on hosts
+  without a blocking ask tool (`kiro-cli`, `fallback`), asking one decision per turn
+  with a recommended answer.
+- **Signal prose-only waits in multi-agent/Herdr panes.** On hosts without a blocking
+  ask tool (`kiro-cli`, `fallback`), when running in a multi-agent/Herdr pane, end
+  every question turn with `[WAITING-FOR-PERSON]` on its own final line so peer agents
+  can tell the pane is waiting on human input despite not entering a TUI `blocked`
+  dialog. Do not emit this marker when `claude` or `agy` asks an open-ended question
+  in plain prose.
 - **Never ask what the artifact already answers.** That's the fastest way to lose the
   room.
 - **Reject vagueness once, then move on.** If the answer is "it depends" or "both",
@@ -71,11 +81,13 @@ or the module boundaries comes before one that changes a default value.
 - **Restate every answer as a decision** before the next question: "So: sources are
   ordered, first match wins, and a dead source is skipped silently. Next —". This is
   how you catch a misunderstanding while it's still cheap.
-- **Confirm decisions with `AskUserQuestion`, not prose.** Prefer the built-in ask
-  tool over typing "is that right?" in chat. Put the restated decision in the
-  question, offer options like "Confirmed", "Adjust it" (and a concrete alternative
-  when one exists), and let the user pick. Fall back to plain prose only when the
-  tool is unavailable or the decision is too open-ended to enumerate.
+- **Confirm decisions with the built-in ask tool, not prose.** Prefer `AskUserQuestion`
+  (`claude`) or `ask_question` (`agy`) over typing "is that right?" in chat. Put the
+  restated decision in the question, offer options like `Confirmed` (recommended) and
+  `Adjust it` (plus a concrete alternative when one exists), and let the user pick.
+  Fall back to plain prose only when no blocking ask tool is available or the decision
+  is too open-ended to enumerate (ending with `[WAITING-FOR-PERSON]` on prose-only
+  hosts in multi-agent/Herdr panes).
 - **Follow the blood.** When an answer opens a bigger hole than the one you were
   probing, abandon the backlog and chase it.
 - Roughly 5–10 questions is a real grilling. Stop when the remaining backlog only

@@ -3,7 +3,7 @@
 - Plan the waves before spawning ([waves.md](waves.md)) and confirm the plan with the person.
 - Verify before acting on a peer message: read the issue or file the claim is about. Apply small, correct fixes to your own artifacts; ask the person before anything outward-facing or any scope decision.
 - If a worker says it pressed a key on your dialog, re-ask the person the affected questions. Treat any answer that arrived while a worker could have typed into your pane as unconfirmed until re-confirmed.
-- Ask the person with one decision per question and a recommended option; restate the answer as a decision.
+- When asking the person for decisions, follow `grill-me`'s question, recommended-option, and decision-confirmation pattern.
 - Fan out a decision to every artifact it touches in one pass (the parent, the other tasks' bodies, the worker that owns the code), then run the project's audit tool.
 - After a change to a shared plan or canvas, tell the workers that carry a copy of it, and say what to diff.
 - **Verify every hand-over yourself before passing it on.** For a `[DONE]` report read the branch (`git log origin/<base>..HEAD`, the closing keywords in the commit messages, the diff stat and the files that carry decisions), and for a PR read it with `gh pr view` (state, merge state, check result, body keywords). Do not re-run the whole suite; say plainly that you relied on the worker's check result.

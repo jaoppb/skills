@@ -63,8 +63,8 @@ Always run `code-quality`. Activate each conditional lens **only** when the diff
 ## 3. Open Discovery of External Specialist Agents
 
 Before dispatching Round 1, scan project and user agent/skill directories for installed specialist reviewers:
-- Project: `.claude/agents/`, `.kiro/agents/`, `.agents/`
-- User: `~/.claude/agents/`, `~/.kiro/agents/`, `~/.gemini/config/`
+- Project: `.claude/agents/`, `.claude/skills/`, `.kiro/agents/`, `.agents/`
+- User: `~/.claude/agents/`, `~/.claude/skills/`, `~/.kiro/agents/`, `~/.agents/skills/`, `~/.gemini/config/`
 
 When a discovered specialist matches the diff or task:
 - **Overlapping domain**: If it clearly covers the same domain as a built-in lens (e.g. a project-specific security or UI reviewer), it **replaces** that built-in lens.
@@ -75,12 +75,12 @@ When a discovered specialist matches the diff or task:
 
 ## 4. Two-Tier Model Guidance
 
-Select the sub-agent model tier by lens depth rather than hardcoding a single vendor:
+Select the sub-agent model tier by lens depth using portable capability tiers (map each tier to your host's configured models/efforts, or follow project-level rules when present):
 
-| Tier | Lenses | Claude / Kiro Subagents | Antigravity (`invoke_subagent`) | Standalone CLI / Panes |
-| :--- | :--- | :--- | :--- | :--- |
-| `flagship` | `code-quality`, `testing`, `security`, `data`, `performance` (and deep-tagged external agents) | `opus` | `pro` | `opus --effort medium` / `gemini-4-argon-medium` |
-| `fast/balanced` | `frontend`, `seo`, `devops`, `product-owner`, `product-manager`, `api-docs` (and external agents by default) | `sonnet` | `flash` | `sonnet --effort high` / `gemini-4-hydrogen-high` |
+| Tier | Capability | Lenses |
+| :--- | :--- | :--- |
+| `flagship` | Strongest reasoning tier | `code-quality`, `testing`, `security`, `data`, `performance` (and deep-tagged external agents) |
+| `fast/balanced` | Fast general-purpose tier | `frontend`, `seo`, `devops`, `product-owner`, `product-manager`, `api-docs` (and external agents by default) |
 
 ---
 
@@ -112,11 +112,11 @@ Maintain a temporary ledger file in `/tmp` or the session scratch directory (nev
 Re-run **only**:
 1. **`code-quality`** (always re-runs to catch fix-induced spaghetti or complexity),
 2. **any lens that rejected in Round N**, and
-3. **any previously approved lens whose domain files changed** in `git diff <prev_round_sha>..HEAD` (check the lens's invalidation globs in `references/lenses/<lens>.md`; fall back conservatively to re-running whenever uncertain).
+3. **any conditional lens whose domain files changed** in `git diff <prev_round_sha>..HEAD` (or a written delta diff artifact when sandboxing prevents git access) — both invalidating previously approved lenses and activating newly triggered inactive lenses (adding them to `active_lenses`). Check each lens's invalidation triggers/globs in `references/lenses/<lens>.md`, falling back conservatively to re-running whenever uncertain.
 
 Pass each re-run sub-agent:
-- the current branch diff (`git diff origin/<base>..HEAD`),
-- the delta since the prior round (`git diff <prev_round_sha>..HEAD`), and
+- the current branch diff (`git diff origin/<base>..HEAD` or written diff artifact),
+- the delta since the prior round (`git diff <prev_round_sha>..HEAD` or written delta diff artifact), and
 - its prior rounds' `fixed` / `rejected` / `deferred` ledger so it focuses on regressions and unresolved gaps without re-litigating settled nitpicks.
 
 ### Escalation & Conflicts

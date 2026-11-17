@@ -5,7 +5,7 @@
 - **Activation Trigger**: Behavior or logic changed, tests added/modified, or a bugfix lacks a regression test. Stay off for pure docs/comment/style-only diffs.
 - **Delta Re-run Invalidation**:
   - `**/*test*`, `**/*spec*`, `**/tests/**`, `**/__tests__/**`, `**/fixtures/**`
-  - Any source file whose behavior or public contract changed in `<prev-round-sha>..HEAD`
+  - Any source file whose behavior or public contract changed in `<prev_round_sha>..HEAD`
   - Test runner / CI config (`vitest.config.*`, `jest.config.*`, `pytest.ini`, `pyproject.toml`, `Cargo.toml`, `package.json`)
   - *Conservative fallback*: re-run whenever uncertain whether a fix altered testable behavior.
 

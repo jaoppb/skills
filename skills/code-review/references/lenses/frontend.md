@@ -15,7 +15,7 @@
 1. **Check for Impeccable**: Look for an installed Impeccable `audit` skill in the project or user skill roots (a project-local variant—such as a modified non-web one—wins over upstream `pbakaus/impeccable`; never vendor or copy Impeccable into the repo).
    - If Impeccable `audit` is installed and initialized (e.g., `PRODUCT.md` present where required), run `audit` on the UI-bearing parts of the diff and map its severities (`P0` → `blocker`, `P1` → `material`, `P2/P3` → `nitpick`).
    - `critique` (scored UX review) is **not** part of the automated review loop; it stays with the user at PR review.
-2. **Built-In Fallback**: When Impeccable is not installed, run the built-in checklist below.
+2. **Built-In Fallback**: When Impeccable is not installed or not initialized (e.g., missing `PRODUCT.md`), run the built-in checklist below (unless a host workflow explicitly requires blocking on missing Impeccable setup).
 
 ---
 

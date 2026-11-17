@@ -47,8 +47,8 @@ npx skills add jaoppb/skills --skill grill-me -g
 # Install herdr CLI integration
 npx skills add jaoppb/skills --skill herdr -g
 
-# Install thermo-nuclear code quality review
-npx skills add jaoppb/skills --skill thermo-nuclear-code-quality-review -g
+# Install multi-lens code review
+npx skills add jaoppb/skills --skill code-review -g
 
 # Install codebase audit
 npx skills add jaoppb/skills --skill codebase-audit -g
@@ -66,7 +66,7 @@ npx skills add jaoppb/skills --skill spdd-bootstrap -g
 | [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md) | Coordinates multiple agents in parallel across separate Git worktrees using [Herdr](https://herdr.dev). Enforces wave planning, mandatory initial grilling (`/grill-me`), strict quality review loops, and automated PR creation. | Root `SKILL.md` + 10 modular reference runbooks under `references/`. |
 | [`herdr`](./skills/herdr/SKILL.md) | Inspects and controls panes, tabs, workspaces, and agents running under the Herdr workspace manager via the `herdr` CLI. | Standalone `SKILL.md`. |
 | [`grill-me`](./skills/grill-me/SKILL.md) | Interrogates a spec, plan, or design one hard question at a time to expose gaps and undecided trade-offs, then writes the decisions back. Used by every `herdr-multi-agent` worker at startup. | Standalone `SKILL.md`. |
-| [`thermo-nuclear-code-quality-review`](./skills/thermo-nuclear-code-quality-review/SKILL.md) | High-rigor, unsparing maintainability and structural review. Identifies architectural leaks, spaghetti conditionals, bloated files, and enforces code simplicity. | Standalone `SKILL.md`. |
+| [`code-review`](./skills/code-review/SKILL.md) | Multi-lens, read-only branch/PR review with mandatory `code-quality` structural baseline, 10 conditional specialist lenses (`testing`, `security`, `data`, `devops`, `frontend`, `seo`, `product-owner`, `product-manager`, `performance`, `api-docs`), open discovery of external specialists, and smart delta re-runs. | Root `SKILL.md` + 11 lens guides under `references/lenses/`. |
 | [`codebase-audit`](./skills/codebase-audit/SKILL.md) | Audits a whole repository for smells, architecture, testing, security and tooling gaps by fanning work out to subagents, then produces a prioritized, issue-ready report. | Root `SKILL.md` + `references/` guides (generic, Rust, TypeScript/Next.js/React) + `scripts/`. |
 | [`spdd-bootstrap`](./skills/spdd-bootstrap/SKILL.md) | Generates, once per repository, SPDD skills (`spdd-analysis`, `spdd-reasons-canvas`, `spdd-generate`, `spdd-prompt-update`, plus `spdd-sync` when canvases are committed) tailored to that project's rules, architecture, check command and tracker. | Root `SKILL.md` + `references/` (profile, decisions, rendering, Cosmo worked example, `templates/`) + `scripts/render.py`. |
 
@@ -76,6 +76,21 @@ npx skills add jaoppb/skills --skill spdd-bootstrap -g
 
 ```text
 skills/
+├── code-review/
+│   ├── SKILL.md
+│   └── references/
+│       └── lenses/
+│           ├── api-docs.md
+│           ├── code-quality.md
+│           ├── data.md
+│           ├── devops.md
+│           ├── frontend.md
+│           ├── performance.md
+│           ├── product-manager.md
+│           ├── product-owner.md
+│           ├── security.md
+│           ├── seo.md
+│           └── testing.md
 ├── codebase-audit/
 │   ├── SKILL.md
 │   ├── references/
@@ -112,8 +127,6 @@ skills/
 │           ├── spdd-prompt-update.md
 │           ├── spdd-reasons-canvas.md
 │           └── spdd-sync.md
-└── thermo-nuclear-code-quality-review/
-    └── SKILL.md
 ```
 
 ---

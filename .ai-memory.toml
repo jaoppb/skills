@@ -1,0 +1,36 @@
+# Opt-in marker for ai-memory: only a repository that carries this file is
+# captured by the agents' lifecycle hooks. No server address, token or
+# hostname belongs here.
+workspace = "default"
+project = "jaoppb-skills"
+drop_subagent_captures = true
+
+[briefing]
+inject_on_session_start = true
+max_chars = 4000
+
+[capture]
+ignore_paths = [
+  ".env",
+  "**/.env",
+  ".env.*",
+  "**/.env.*",
+  "*.key",
+  "**/*.key",
+  "*.pem",
+  "**/*.pem",
+  "*.pfx",
+  "**/*.pfx",
+  "*.p12",
+  "**/*.p12",
+  "*.db*",
+  "**/*.db*",
+  ".codebase-audit/**",
+  "node_modules/**",
+  "**/__pycache__/**",
+  "*.log",
+  "**/*.log",
+  "*.bak",
+  "**/*.bak",
+  ".bak/**",
+]

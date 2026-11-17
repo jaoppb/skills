@@ -1,11 +1,11 @@
 ---
 name: code-review
-description: "Run a multi-lens, read-only specialist review on a branch diff or PR (`git diff origin/<base>..HEAD`). Always runs the mandatory `code-quality` baseline (structural rigor, <1k LOC guard, code-judo simplification), activates up to 10 conditional specialist lenses (`testing`, `security`, `data`, `devops`, `frontend`, `seo`, `product-owner`, `product-manager`, `performance`, `api-docs`) plus discovered external specialist agents, and uses smart delta re-runs across rounds. Use when reviewing existing code changes, diffs, branches, or pull requests. Do not use for whole-repository audits across untouched modules (use codebase-audit) or for interrogating a spec/plan before code exists (use grill-me)."
+description: "Run a multi-lens, read-only specialist review on a branch diff or PR (`git diff origin/<base>...HEAD`). Always runs the mandatory `code-quality` baseline (structural rigor, <1k LOC guard, code-judo simplification), activates up to 10 conditional specialist lenses (`testing`, `security`, `data`, `devops`, `frontend`, `seo`, `product-owner`, `product-manager`, `performance`, `api-docs`) plus discovered external specialist agents, and uses smart delta re-runs across rounds. Use when reviewing existing code changes, diffs, branches, or pull requests. Do not use for whole-repository audits across untouched modules (use codebase-audit) or for interrogating a spec/plan before code exists (use grill-me)."
 ---
 
 # Code Review
 
-Orchestrate a multi-lens, read-only specialist review of a branch diff (`git diff origin/<base>..HEAD`, or a written diff file when sandboxing prevents git access).
+Orchestrate a multi-lens, read-only specialist review of a branch diff (`git diff origin/<base>...HEAD`, or a written diff file when sandboxing prevents git access).
 
 The orchestrator selects lenses, dispatches fresh read-only sub-agents, tracks round state in a temporary ledger, escalates conflicts, and enforces the approval bar. **The orchestrator never reviews its own diff and never folds multiple lenses into one sub-agent.**
 
@@ -100,11 +100,11 @@ Every lens emits findings with one of four severities:
 
 Maintain a temporary ledger file in `/tmp` or the session scratch directory (never commit it to the repository) so round state survives context compaction. Record:
 - `prev_round_sha`: the `HEAD` commit reviewed in the last round
-- `active_lenses`: lenses assigned in Round 1 and their current status
+- `active_lenses`: currently active lenses (initialized in Round 1) and their status
 - `findings_ledger`: per-lens list of `fixed`, `rejected` (with reason), and `deferred` (with reason) findings
 
 ### Round 1
-1. Compute the base diff (`git diff origin/<base>..HEAD` or written diff artifact).
+1. Compute the base diff (`git diff origin/<base>...HEAD` or written diff artifact).
 2. Dispatch 1 fresh read-only sub-agent per active lens in parallel.
 3. Record `prev_round_sha = HEAD` and all findings in the temporary ledger.
 
@@ -112,12 +112,14 @@ Maintain a temporary ledger file in `/tmp` or the session scratch directory (nev
 Re-run **only**:
 1. **`code-quality`** (always re-runs to catch fix-induced spaghetti or complexity),
 2. **any lens that rejected in Round N**, and
-3. **any conditional lens whose domain files changed** in `git diff <prev_round_sha>..HEAD` (or a written delta diff artifact when sandboxing prevents git access) — both invalidating previously approved lenses and activating newly triggered inactive lenses (adding them to `active_lenses`). Check each lens's invalidation triggers/globs in `references/lenses/<lens>.md`, falling back conservatively to re-running whenever uncertain.
+3. **any conditional lens or external specialist whose domain files changed** in `git diff <prev_round_sha>..HEAD` (or a written delta diff artifact when sandboxing prevents git access) — both invalidating previously approved lenses and activating newly triggered inactive lenses (adding them to `active_lenses`). Check each lens's invalidation triggers/globs in `references/lenses/<lens>.md`, falling back conservatively to re-running whenever uncertain.
 
 Pass each re-run sub-agent:
-- the current branch diff (`git diff origin/<base>..HEAD` or written diff artifact),
+- the current branch diff (`git diff origin/<base>...HEAD` or written diff artifact),
 - the delta since the prior round (`git diff <prev_round_sha>..HEAD` or written delta diff artifact), and
 - its prior rounds' `fixed` / `rejected` / `deferred` ledger so it focuses on regressions and unresolved gaps without re-litigating settled nitpicks.
+
+Update `prev_round_sha = HEAD` and the temporary ledger at the end of the round.
 
 ### Escalation & Conflicts
 - **Max rounds**: After 5 rounds without approval, or when a finding requires a product/architectural decision outside the author's scope, stop and escalate to the user/coordinator with options and a recommendation.

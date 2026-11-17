@@ -1,6 +1,6 @@
 ---
 name: grill-me
-description: Interrogate the user's idea, spec, plan, or design to expose gaps, unstated assumptions, and undecided trade-offs — one hard question at a time — then write the sharpened decisions back into the artifact. Use when the user says "grill me", "poke holes in this", "interrogate my spec", "what am I missing", "challenge this plan", or hands over a vague SPEC/RFC/plan and wants it hardened before implementation. Not for reviewing code that already exists (use code-review) and not for quizzing the user's knowledge.
+description: Interrogate the user's idea, spec, plan, or design to expose gaps, unstated assumptions, and undecided trade-offs — one hard question at a time — then write the sharpened decisions back into the artifact (or output them in chat if no artifact exists). Use when the user says "grill me", "poke holes in this", "interrogate my spec", "what am I missing", "challenge this plan", or hands over a vague spec/RFC/plan and wants it hardened before implementation. Not for reviewing code that already exists (use code-review) and not for quizzing the user's knowledge.
 ---
 
 # Grill Me
@@ -14,11 +14,13 @@ Blunt, never cruel. Every question must earn its place by changing what gets bui
 
 ## 1. Find the target
 
-The artifact is whatever the user is asking about: a `SPEC.md` / `README` / RFC /
-plan file, a design described in the conversation, or a pitch they just typed.
+The artifact is whatever the user is asking about: a file (plan, RFC, doc,
+`README`), a tracker/GitHub issue, a design described in the conversation, or a
+pitch they just typed.
 
 - Read it fully before asking anything. If it points at other files, read those too.
-- If it's a file, note its path — you'll write back to it at the end.
+- If it's a file or issue, note its path or reference — you'll write back to it in
+  place at the end.
 - If nothing concrete exists, ask one question: what is this thing and who is it for?
   Then grill the answer.
 
@@ -98,11 +100,8 @@ the idea — silence about what's fine is the compliment.
 
 ## 4. Write it back
 
-When the grilling ends, update the artifact in place (or create `SPEC.md` next to it
-if the idea only lived in the conversation). Preserve the author's voice and
-language; don't rewrite the whole document into your own prose.
-
-Add or update these sections:
+When the grilling ends, handle the output based on whether a target artifact exists,
+including these four sections:
 
 - **Decisions** — one line each, in the words the user settled on.
 - **Non-goals** — what v1 does not do.
@@ -110,5 +109,12 @@ Add or update these sections:
   so future-them can decide with context.
 - **Risks** — the failure modes that survived the grilling unanswered.
 
-Then report, in three lines or fewer: what got decided, what's still open, and the
-single biggest remaining risk. No summary of the conversation — they were there.
+- **Existing artifact** (file, plan, RFC, or tracker/GitHub issue): update it in
+  place, adding or updating those four sections while preserving the author's voice
+  and language — don't rewrite the whole document into your own prose. Then report,
+  in three lines or fewer: what got decided, what's still open, and the single
+  biggest remaining risk. No summary of the conversation — they were there.
+- **Conversation-only** (no existing target artifact): output those four sections
+  directly in chat as the final output (omit the three-line report). Never create
+  `SPEC.md` or any other file or issue, and never offer to save it — only write to
+  a destination if the user explicitly asks you to.

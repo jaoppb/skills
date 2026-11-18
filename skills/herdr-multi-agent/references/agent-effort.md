@@ -1,15 +1,16 @@
 # Agent and effort map
 
-Which agent and effort level to start for each kind of task. Use it in [topology.md](topology.md) when creating agents.
+Single source of truth for coordinator and worker model tiers and selectable presets. Pair the chosen preset row with your host protocol ([protocols/claude.md](protocols/claude.md), [protocols/agy.md](protocols/agy.md), or [protocols/fallback.md](protocols/fallback.md)) in [topology.md](topology.md) when starting agents.
 
 ## Default (Preset 3: Coordinator = Middle, Worker = Top)
 
-| Role | Family (`--kind`) | Agent | Effort | Start args (after `--`) |
-|------|-------------------|-------|--------|-------------------------|
-| Coordinator | `claude` | Claude Opus 5.5 | medium | `--model claude-opus-5-5 --effort medium` |
-| Coordinator | `agy` | Gemini 4 Argon | medium | `--model gemini-4-argon-medium` |
-| Worker | `claude` | Claude Fable 5.2 | medium | `--model claude-fable-5-2 --effort medium` |
-| Worker | `agy` | Gemini 4 Carbon | medium | `--model gemini-4-carbon-medium` |
+| Role | Family (`--kind`) | Agent | Effort | Protocol |
+|------|-------------------|-------|--------|----------|
+| Coordinator | `claude` | Claude Opus 5.5 (`claude-opus-5-5`) | medium | [protocols/claude.md](protocols/claude.md) |
+| Coordinator | `agy` | Gemini 4 Argon (`gemini-4-argon-medium`) | medium | [protocols/agy.md](protocols/agy.md) |
+| Worker | `claude` | Claude Fable 5.2 (`claude-fable-5-2`) | medium | [protocols/claude.md](protocols/claude.md) |
+| Worker | `agy` | Gemini 4 Carbon (`gemini-4-carbon-medium`) | medium | [protocols/agy.md](protocols/agy.md) |
+| Coordinator / Worker | other `--kind` | Host default (bare start) | host default | [protocols/fallback.md](protocols/fallback.md) |
 
 ## Tier hierarchy and selectable presets
 
@@ -30,6 +31,6 @@ The person can pick any preset below; **Preset 3** is the default:
 
 - Coordinator and worker are different roles: by default (Preset 3), the coordinator plans waves, overlap and merges on the middle tier (`Opus 5.5` or `Argon`), and each worker implements one task on the top tier (`Fable 5.2` or `Carbon`). Every preset runs at `medium` effort.
 - A worker is always of the same family as its coordinator: take the worker row whose `--kind` matches the coordinator's ([topology.md](topology.md)).
-- `agy` encodes the effort in the model id (list them with `agy models`), so its rows carry no `--effort`.
-- Sub-agents dispatched by a worker for review follow the worker's agent family and effort unless the person says otherwise.
+- Host-specific `--` flag syntax (`--model` + `--effort` on `claude`, `--model` alone on `agy`, bare start on other kinds) and two-tier `code-review` reviewer model mapping (`flagship` vs `fast/balanced`) live in the protocol files ([protocols/claude.md](protocols/claude.md), [protocols/agy.md](protocols/agy.md), [protocols/fallback.md](protocols/fallback.md)).
+- Review sub-agents or fallback review panes dispatched by a worker stay in the worker's agent family unless the person explicitly overrides it.
 - The person can override the preset (1–4) or any individual row; say so in the first prompt so the worker does not assume the default.

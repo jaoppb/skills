@@ -63,7 +63,7 @@ npx skills add jaoppb/skills --skill spdd-bootstrap -g
 
 | Skill | Description & Primary Trigger | Structure |
 | :--- | :--- | :--- |
-| [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md) | Coordinates multiple agents in parallel across separate Git worktrees using [Herdr](https://herdr.dev). Enforces wave planning, mandatory initial grilling (`/grill-me`), strict quality review loops, and automated PR creation. | Root `SKILL.md` + 10 modular reference runbooks under `references/`. |
+| [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md) | Coordinates multiple agents in parallel across separate Git worktrees using [Herdr](https://herdr.dev). Enforces wave planning, mandatory initial grilling (`grill-me`), multi-lens `code-review` loops, per-host protocols, and automated PR creation. | Root `SKILL.md` + 9 workflow runbooks under `references/` + 3 host protocols under `references/protocols/`. |
 | [`herdr`](./skills/herdr/SKILL.md) | Inspects and controls panes, tabs, workspaces, and agents running under the Herdr workspace manager via the `herdr` CLI. | Standalone `SKILL.md`. |
 | [`grill-me`](./skills/grill-me/SKILL.md) | Interrogates a spec, plan, or design one hard question at a time to expose gaps and undecided trade-offs, then writes the decisions back. Used by every `herdr-multi-agent` worker at startup. | Standalone `SKILL.md`. |
 | [`code-review`](./skills/code-review/SKILL.md) | Multi-lens, read-only branch/PR review with mandatory `code-quality` structural baseline, 10 conditional specialist lenses (`testing`, `security`, `data`, `devops`, `frontend`, `seo`, `product-owner`, `product-manager`, `performance`, `api-docs`), open discovery of external specialists, and smart delta re-runs. | Root `SKILL.md` + 11 lens guides under `references/lenses/`. |
@@ -106,8 +106,11 @@ skills/
 │       ├── cleanup.md
 │       ├── coordinator-rules.md
 │       ├── grilling.md
+│       ├── protocols/
+│       │   ├── agy.md
+│       │   ├── claude.md
+│       │   └── fallback.md
 │       ├── reporting-protocol.md
-│       ├── review-frontend.md
 │       ├── review.md
 │       ├── topology.md
 │       ├── waves.md

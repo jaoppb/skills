@@ -1,6 +1,6 @@
 # Fallback Protocol (Other Herdr Kinds & CLI Review Tabs)
 
-Host mechanics for any Herdr `--kind` without a dedicated protocol file (`codex`, `gemini`, `opencode`, `cursor`, `copilot`, `kiro`, etc.), and the fallback CLI review runner when a `claude` or `agy` worker cannot use native in-process sub-agents.
+Host mechanics for any Herdr `--kind` without a dedicated protocol file (`codex`, `gemini`, `opencode`, `cursor`, `copilot`, etc.), and the fallback CLI review runner when a `claude`, `agy`, or `kiro` worker cannot use native in-process sub-agents.
 
 ## 1. Startup & Model Flags
 
@@ -41,7 +41,7 @@ When the host has no native read-only sub-agent tool, run [../review.md](../revi
    - Create `rev-r<n>-2` only when more than 4 lenses run in the round. If more than 8 lenses are active, run the first 8, read and close both review tabs, then run the next batch in fresh review tabs.
 3. **Start one fresh reviewer agent per active lens**:
    - Name each reviewer `rev-<task>-<lens>-r<n>` matching `[a-z][a-z0-9_-]{0,31}`: if longer than 32 characters, shorten `<task>` / `<lens>` (e.g. `po`, `pm`, `cq`) while **always preserving per-lens uniqueness and the `-r<n>` round suffix**.
-   - Use the worker's `--kind` unless overridden by the person. Start bare (`herdr agent start <rev-name> --kind <kind> --pane <pane-id>`) for fallback kinds; when `<kind>` has a dedicated protocol ([claude.md](claude.md), [agy.md](agy.md)), pass that protocol's `--` startup flags for the lens's CLI reviewer tier in [../agent-effort.md](../agent-effort.md) (`flagship` → **Top**, `fast/balanced` → **Middle**, at `medium` effort).
+   - Use the worker's `--kind` unless overridden by the person. Start bare (`herdr agent start <rev-name> --kind <kind> --pane <pane-id>`) for fallback kinds; when `<kind>` has a dedicated protocol ([claude.md](claude.md), [agy.md](agy.md), [kiro.md](kiro.md)), pass that protocol's `--` startup flags for the lens's CLI reviewer tier in [../agent-effort.md](../agent-effort.md) (`flagship` → **Top**, `fast/balanced` → **Middle**, at `medium` effort on `claude`/`agy` and `medium` (`flagship`) / `high` (`fast/balanced`) on `kiro`).
 4. **Prompt, wait, and read (with alternate-screen fallback)**:
    - Write the canonical reviewer brief from [../review.md](../review.md) to `/tmp/brief-<rev-name>.md`, then submit `herdr agent prompt <rev-name> "Read /tmp/brief-<rev-name>.md completely and follow it."` (no `--wait`).
    - Follow [../reporting-protocol.md](../reporting-protocol.md): wait for turn start (`herdr agent wait <rev-name> --until working --timeout 15000`), then wait for completion (`herdr agent wait <rev-name> --until idle --until done --until blocked --timeout 180000`, repeating on `timeout`; if `blocked` or ending in `[WAITING-FOR-PERSON]`, inspect and ask the person rather than sending keys).

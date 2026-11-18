@@ -5,6 +5,7 @@
 ![Standard](https://img.shields.io/badge/Standard-agentskills.io-blue.svg)
 ![Claude Code](https://img.shields.io/badge/Agent-Claude_Code-D97706.svg)
 ![Gemini CLI / Antigravity](https://img.shields.io/badge/Agent-Gemini_CLI-4285F4.svg)
+![Kiro CLI](https://img.shields.io/badge/Agent-Kiro_CLI-7C3AED.svg)
 
 <h3>jaoppb Agent Skills</h3>
 <p>Modular, versioned Agent Skills following the <a href="https://agentskills.io">agentskills.io</a> specification.</p>
@@ -15,7 +16,7 @@
 
 ## Overview
 
-This repository hosts a curated collection of agent skills designed to enhance autonomous coding agents (Claude Code, Gemini CLI / Antigravity, GitHub Copilot, Cursor, and more).
+This repository hosts a curated collection of agent skills designed to enhance autonomous coding agents (Claude Code, Gemini CLI / Antigravity, Kiro CLI, GitHub Copilot, Cursor, and more).
 
 ### Design Principles
 
@@ -63,7 +64,7 @@ npx skills add jaoppb/skills --skill spdd-bootstrap -g
 
 | Skill | Description & Primary Trigger | Structure |
 | :--- | :--- | :--- |
-| [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md) | Coordinates multiple agents in parallel across separate Git worktrees using [Herdr](https://herdr.dev). Enforces wave planning, mandatory initial grilling (`grill-me`), multi-lens `code-review` loops, per-host protocols, and automated PR creation. | Root `SKILL.md` + 9 workflow runbooks under `references/` + 3 host protocols under `references/protocols/`. |
+| [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md) | Coordinates multiple agents in parallel across separate Git worktrees using [Herdr](https://herdr.dev). Enforces wave planning, mandatory initial grilling (`grill-me`), multi-lens `code-review` loops, per-host protocols, and automated PR creation. | Root `SKILL.md` + 9 workflow runbooks under `references/` + 4 host protocols under `references/protocols/` + Kiro agent templates under `references/kiro-agents/` + `scripts/sync_kiro_agents.py`. |
 | [`herdr`](./skills/herdr/SKILL.md) | Inspects and controls panes, tabs, workspaces, and agents running under the Herdr workspace manager via the `herdr` CLI. | Standalone `SKILL.md`. |
 | [`grill-me`](./skills/grill-me/SKILL.md) | Interrogates a spec, plan, or design one hard question at a time to expose gaps and undecided trade-offs, then writes the decisions back. Used by every `herdr-multi-agent` worker at startup. | Standalone `SKILL.md`. |
 | [`code-review`](./skills/code-review/SKILL.md) | Multi-lens, read-only branch/PR review with mandatory `code-quality` structural baseline, 10 conditional specialist lenses (`testing`, `security`, `data`, `devops`, `frontend`, `seo`, `product-owner`, `product-manager`, `performance`, `api-docs`), open discovery of external specialists, and smart delta re-runs. | Root `SKILL.md` + 11 lens guides under `references/lenses/`. |
@@ -101,15 +102,23 @@ skills/
 │   └── SKILL.md
 ├── herdr-multi-agent/
 │   ├── SKILL.md
+│   ├── scripts/
+│   │   ├── sync_kiro_agents.py
+│   │   └── test_sync_kiro_agents.py
 │   └── references/
 │       ├── agent-effort.md
 │       ├── cleanup.md
 │       ├── coordinator-rules.md
 │       ├── grilling.md
+│       ├── kiro-agents/
+│       │   ├── herdr-coordinator.md
+│       │   ├── herdr-worker.md
+│       │   └── review-lens.md
 │       ├── protocols/
 │       │   ├── agy.md
 │       │   ├── claude.md
-│       │   └── fallback.md
+│       │   ├── fallback.md
+│       │   └── kiro.md
 │       ├── reporting-protocol.md
 │       ├── review.md
 │       ├── topology.md

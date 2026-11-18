@@ -38,7 +38,7 @@ npx skills add jaoppb/skills -g
 ### Install a specific skill
 
 ```bash
-# Install herdr multi-agent coordination
+# Install herdr multi-agent coordination (also install companion skills: herdr, grill-me, code-review)
 npx skills add jaoppb/skills --skill herdr-multi-agent -g
 
 # Install grill-me interrogation

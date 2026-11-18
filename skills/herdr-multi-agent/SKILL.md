@@ -5,7 +5,7 @@ description: "Coordinate several autonomous coding agents (Claude, Antigravity, 
 
 # Herdr multi-agent coordination
 
-Lessons from running a coordinator agent and several worker agents, one per task, each in its own Herdr worktree. Load the `herdr` skill first for the CLI itself; this skill is the working method on top of it. Detect your host `--kind` from `herdr agent list` (matching `$HERDR_PANE_ID`) and load **only** the matching protocol runbook ([references/protocols/claude.md](references/protocols/claude.md), [references/protocols/agy.md](references/protocols/agy.md), or [references/protocols/fallback.md](references/protocols/fallback.md) for any other kind). The workflow details live in the reference files linked below; read the one that matches the step you are on.
+Lessons from running a coordinator agent and several worker agents, one per task, each in its own Herdr worktree (requires the companion `herdr`, `grill-me`, and `code-review` skills installed alongside it). Load the `herdr` skill first for the CLI itself; this skill is the working method on top of it. Detect your host `--kind` from `herdr agent list` (matching `$HERDR_PANE_ID`) and load **only** the matching protocol runbook ([references/protocols/claude.md](references/protocols/claude.md), [references/protocols/agy.md](references/protocols/agy.md), or [references/protocols/fallback.md](references/protocols/fallback.md) for any other kind). The workflow details live in the reference files linked below; read the one that matches the step you are on.
 
 ## Roles
 

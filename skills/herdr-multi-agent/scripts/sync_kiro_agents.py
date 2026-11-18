@@ -9,8 +9,8 @@ Usage:
                                 [--models-json <path>] [--allow-auto-fallback]
                                 [--print-models]
 
-Renders and installs the 13 namespaced Kiro custom agent profiles managed by
-herdr-multi-agent (`herdr-coordinator.md`, `herdr-worker.md`, and 11 read-only
+Renders and installs the namespaced Kiro custom agent profiles managed by
+herdr-multi-agent (`herdr-coordinator.md`, `herdr-worker.md`, and read-only
 `review-<lens>.md` wrappers embedding `code-review/references/lenses/<lens>.md`)
 into `~/.kiro/agents/` without touching task git worktrees or non-namespaced
 user agents.
@@ -21,9 +21,9 @@ sidecar `.json` files are written into `~/.kiro/agents/`).
 
 Exit codes:
     0  All managed profiles synced (or verified up-to-date under --check).
-    1  Missing or stale profiles under --check, or model/lens/template error.
+    1  Missing or stale profiles under --check, or model/lens/template/I/O error.
     2  Hand-edited/unmanaged conflict in --out-dir (rerun with --force), or
-       unsafe symlink/non-directory target refused.
+       unsafe symlink/non-directory/non-regular target refused.
 """
 
 from __future__ import annotations
@@ -44,29 +44,16 @@ TEMPLATES_DIR = SKILL_DIR / "references" / "kiro-agents"
 DEFAULT_CODE_REVIEW_DIR = SKILL_DIR.parent / "code-review"
 DEFAULT_OUT_DIR = Path.home() / ".kiro" / "agents"
 
-LENS_TIERS: dict[str, str] = {
-    "code-quality": "flagship",
-    "testing": "flagship",
-    "security": "flagship",
-    "data": "flagship",
-    "performance": "flagship",
-    "devops": "fast/balanced",
-    "frontend": "fast/balanced",
-    "seo": "fast/balanced",
-    "product-owner": "fast/balanced",
-    "product-manager": "fast/balanced",
-    "api-docs": "fast/balanced",
-}
-
 MODEL_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+LENS_NAME_RE = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
+LENS_TIER_RE = re.compile(r"^-\s*\*\*Tier\*\*:\s*`(flagship|fast/balanced)`\s*$", re.M)
 PROVENANCE_RE = re.compile(
     r"\A(---\n.*?\n---\n)<!-- herdr-multi-agent-managed: sha256=([0-9a-f]{64}) -->\n",
     re.S,
 )
 FRONTMATTER_SPLIT_RE = re.compile(r"\A(---\n.*?\n---\n)", re.S)
-DATE_TOKEN_RE = re.compile(r"(?:^|[-._])((?:19|20)\d{6})(?:$|[-._])")
+DATE_TOKEN_RE = re.compile(r"^(?:19|20)\d{6}$")
 PROVIDER_REV_RE = re.compile(r"(?:-v\d+)?(?::\d+)?$", re.I)
-LEADING_VER_RE = re.compile(r"^(\d+(?:[.-]\d+)*)")
 PLACEHOLDER_RE = re.compile(r"\{\{([A-Z_]+)\}\}")
 
 
@@ -106,7 +93,7 @@ def extract_model_ids(payload: object) -> list[str]:
         elif isinstance(entry, dict):
             for key in ("id", "modelId", "model_id", "slug", "name"):
                 val = entry.get(key)
-                if isinstance(val, str) and MODEL_ID_RE.match(val):
+                if isinstance(val, str) and val:
                     candidate = val
                     break
         if candidate and MODEL_ID_RE.match(candidate) and candidate not in seen:
@@ -115,40 +102,47 @@ def extract_model_ids(payload: object) -> list[str]:
     return models
 
 
-def rank_family_slug(slug: str, family: str) -> tuple[tuple[int, ...], int, int, bool, int, str]:
+def rank_family_slug(
+    slug: str, family: str
+) -> tuple[tuple[int, ...], int, int, int, bool, int, str]:
     """Return a comparison key ranking higher versions first and canonical slugs over dated/preview ones."""
     prefix = f"claude-{family}-"
-    rest = slug[len(prefix):]
-    rest = PROVIDER_REV_RE.sub("", rest)
+    raw_rest = slug[len(prefix):]
+    rest = PROVIDER_REV_RE.sub("", raw_rest)
+    has_provider_rev = rest != raw_rest
 
-    date_match = DATE_TOKEN_RE.search(rest)
-    if date_match:
-        is_dated = True
-        date_num = int(date_match.group(1))
-        rest = (rest[:date_match.start()] + "-" + rest[date_match.end():]).strip("-._")
-    else:
-        is_dated = False
-        date_num = 0
+    tokens = [tok for tok in re.split(r"[-._]", rest) if tok]
+    raw_ver: list[int] = []
+    idx = 0
+    while idx < len(tokens) and tokens[idx].isdigit() and not DATE_TOKEN_RE.match(tokens[idx]):
+        raw_ver.append(int(tokens[idx]))
+        idx += 1
 
-    ver_match = LEADING_VER_RE.match(rest)
-    if ver_match:
-        raw_parts = [int(p) for p in re.split(r"[.-]", ver_match.group(1))]
-        while len(raw_parts) > 1 and raw_parts[-1] == 0:
-            raw_parts.pop()
-        version = tuple(raw_parts)
-        extra_suffix = rest[ver_match.end():].strip("-._")
-    else:
-        version = (0,)
-        extra_suffix = rest.strip("-._")
+    while len(raw_ver) > 1 and raw_ver[-1] == 0:
+        raw_ver.pop()
+    version = tuple(raw_ver) if raw_ver else (0,)
 
-    if extra_suffix:
+    remaining = tokens[idx:]
+    dates = [int(tok) for tok in remaining if DATE_TOKEN_RE.match(tok)]
+    others = [tok for tok in remaining if not DATE_TOKEN_RE.match(tok)]
+
+    if others:
         stability_rank = 0
-    elif is_dated:
+    elif dates:
         stability_rank = 1
     else:
         stability_rank = 2
 
-    return (version, stability_rank, date_num, "." in slug, -len(slug), slug)
+    date_num = max(dates) if dates else 0
+    return (
+        version,
+        stability_rank,
+        0 if has_provider_rev else 1,
+        date_num,
+        "." in rest,
+        -len(rest),
+        slug,
+    )
 
 
 def select_family_model(catalog: list[str], family: str) -> str | None:
@@ -231,41 +225,66 @@ def resolve_models(
     resolved: dict[str, str] = {}
     for family, override in (("opus", opus_override), ("sonnet", sonnet_override)):
         if override is not None:
-            if override in catalog:
-                resolved[family] = override
-            elif allow_auto_fallback:
-                print(
-                    f"warn   --{family}-model '{override}' is not in kiro-cli model catalog; "
-                    "falling back to 'auto' (--allow-auto-fallback)",
-                    file=sys.stderr,
-                )
-                resolved[family] = "auto"
-            else:
-                raise SyncError(
-                    f"--{family}-model '{override}' is not available in kiro-cli model catalog "
-                    f"({', '.join(catalog)})"
-                )
+            picked = override if override in catalog else None
+            missing_msg = f"--{family}-model '{override}' is not in kiro-cli model catalog"
+            fatal_msg = f"{missing_msg} ({', '.join(catalog)})"
         else:
             picked = select_family_model(catalog, family)
-            if picked is not None:
-                resolved[family] = picked
-            elif allow_auto_fallback:
-                print(
-                    f"warn   no 'claude-{family}-*' model available in kiro-cli catalog; "
-                    "falling back to 'auto' (--allow-auto-fallback)",
-                    file=sys.stderr,
-                )
-                resolved[family] = "auto"
-            else:
-                raise SyncError(
-                    f"no 'claude-{family}-*' model available in kiro-cli catalog "
-                    f"(pass --{family}-model or --allow-auto-fallback)"
-                )
+            missing_msg = f"no 'claude-{family}-*' model available in kiro-cli catalog"
+            fatal_msg = f"{missing_msg} (pass --{family}-model or --allow-auto-fallback)"
+
+        if picked is not None:
+            resolved[family] = picked
+        elif allow_auto_fallback:
+            print(f"warn   {missing_msg}; falling back to 'auto' (--allow-auto-fallback)", file=sys.stderr)
+            resolved[family] = "auto"
+        else:
+            raise SyncError(fatal_msg)
 
     return resolved["opus"], resolved["sonnet"]
 
 
+def load_code_review_lenses(code_review_dir: Path) -> dict[str, tuple[str, str]]:
+    """Load (tier, body) for every lens guide in <code-review-dir>/references/lenses/*.md."""
+    lenses_dir = code_review_dir / "references" / "lenses"
+    if not lenses_dir.is_dir():
+        raise SyncError(
+            f"companion code-review lenses directory not found at '{lenses_dir}' "
+            "(install 'code-review' alongside 'herdr-multi-agent' or pass --code-review-dir)"
+        )
+
+    try:
+        lens_files = sorted(p for p in lenses_dir.glob("*.md") if p.is_file())
+    except OSError as err:
+        raise SyncError(f"cannot list lenses directory '{lenses_dir}': {err}") from err
+
+    if not lens_files:
+        raise SyncError(f"no lens guide (.md) files found in '{lenses_dir}'")
+
+    lenses: dict[str, tuple[str, str]] = {}
+    for lens_path in lens_files:
+        lens_name = lens_path.stem
+        if not LENS_NAME_RE.match(lens_name):
+            raise SyncError(f"invalid lens filename '{lens_path.name}' in '{lenses_dir}'")
+        try:
+            body = lens_path.read_text(encoding="utf-8").strip()
+        except OSError as err:
+            raise SyncError(f"cannot read lens guide '{lens_path}': {err}") from err
+        tier_match = LENS_TIER_RE.search(body)
+        if not tier_match:
+            raise SyncError(
+                f"lens guide '{lens_path}' is missing '- **Tier**: `flagship`' or '- **Tier**: `fast/balanced`'"
+            )
+        lenses[lens_name] = (tier_match.group(1), body)
+
+    return lenses
+
+
 def render_with_provenance(template: str, values: dict[str, str]) -> str:
+    stripped_template = PLACEHOLDER_RE.sub("", template)
+    if "{{" in stripped_template or "}}" in stripped_template:
+        raise SyncError("malformed '{{' or '}}' placeholder in agent template")
+
     def replace(match: re.Match[str]) -> str:
         key = match.group(1)
         if key not in values:
@@ -273,8 +292,6 @@ def render_with_provenance(template: str, values: dict[str, str]) -> str:
         return values[key]
 
     unmarked = PLACEHOLDER_RE.sub(replace, template).strip() + "\n"
-    if "{{" in unmarked:
-        raise SyncError("unresolved '{{' left after template rendering")
     fm_match = FRONTMATTER_SPLIT_RE.match(unmarked)
     if not fm_match:
         raise SyncError("rendered agent profile is missing leading YAML frontmatter")
@@ -291,7 +308,7 @@ def build_expected_profiles(
     code_review_dir: Path = DEFAULT_CODE_REVIEW_DIR,
     templates_dir: Path = TEMPLATES_DIR,
 ) -> dict[str, str]:
-    """Render all 13 managed Kiro custom agent files in memory."""
+    """Render all managed Kiro custom agent files in memory."""
     validate_model_id(opus_model, "opus_model")
     validate_model_id(sonnet_model, "sonnet_model")
 
@@ -302,41 +319,24 @@ def build_expected_profiles(
         if not path.is_file():
             raise SyncError(f"missing Kiro agent template: {path}")
 
-    lenses_dir = code_review_dir / "references" / "lenses"
-    if not lenses_dir.is_dir():
-        raise SyncError(
-            f"companion code-review lenses directory not found at '{lenses_dir}' "
-            "(install 'code-review' alongside 'herdr-multi-agent' or pass --code-review-dir)"
-        )
+    try:
+        coord_tpl = coord_tpl_path.read_text(encoding="utf-8")
+        worker_tpl = worker_tpl_path.read_text(encoding="utf-8")
+        lens_template = lens_tpl_path.read_text(encoding="utf-8")
+    except OSError as err:
+        raise SyncError(f"cannot read Kiro agent template: {err}") from err
 
-    found_lenses = {p.stem for p in lenses_dir.glob("*.md") if p.is_file()}
-    expected_lenses = set(LENS_TIERS)
-    missing_lenses = sorted(expected_lenses - found_lenses)
-    extra_lenses = sorted(found_lenses - expected_lenses)
-    if missing_lenses:
-        raise SyncError(
-            f"missing lens guide(s) in '{lenses_dir}': {', '.join(missing_lenses)}"
-        )
-    if extra_lenses:
-        raise SyncError(
-            f"unmapped lens guide(s) in '{lenses_dir}' (update LENS_TIERS): {', '.join(extra_lenses)}"
-        )
+    lenses = load_code_review_lenses(code_review_dir)
 
     common = {"OPUS_MODEL": opus_model, "SONNET_MODEL": sonnet_model}
     profiles: dict[str, str] = {
-        "herdr-coordinator.md": render_with_provenance(
-            coord_tpl_path.read_text(encoding="utf-8"), common
-        ),
-        "herdr-worker.md": render_with_provenance(
-            worker_tpl_path.read_text(encoding="utf-8"), common
-        ),
+        "herdr-coordinator.md": render_with_provenance(coord_tpl, common),
+        "herdr-worker.md": render_with_provenance(worker_tpl, common),
     }
 
-    lens_template = lens_tpl_path.read_text(encoding="utf-8")
-    for lens_name, tier in sorted(LENS_TIERS.items()):
+    for lens_name, (tier, lens_body) in sorted(lenses.items()):
         agent_name = f"review-{lens_name}"
         model = opus_model if tier == "flagship" else sonnet_model
-        lens_body = (lenses_dir / f"{lens_name}.md").read_text(encoding="utf-8").strip()
         rendered = render_with_provenance(
             lens_template,
             {
@@ -369,7 +369,13 @@ def inspect_target(path: Path, expected_text: str) -> tuple[str, str]:
     if not path.is_file():
         return "unsafe", f"{path} (not a regular file)"
 
-    disk_text = path.read_text(encoding="utf-8")
+    try:
+        disk_text = path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return "conflict", f"{path} (non-UTF-8 file not generated by sync_kiro_agents.py)"
+    except OSError as err:
+        raise SyncError(f"cannot read '{path}': {err}") from err
+
     prov = PROVENANCE_RE.match(disk_text)
     if not prov:
         return "conflict", f"{path} (unmanaged file not generated by sync_kiro_agents.py)"
@@ -383,21 +389,30 @@ def inspect_target(path: Path, expected_text: str) -> tuple[str, str]:
     return "stale", str(path)
 
 
-def atomic_write(path: Path, content: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+def current_file_mode() -> int:
+    umask = os.umask(0o077)
+    os.umask(umask)
+    return 0o666 & ~umask
+
+
+def atomic_write(path: Path, content: str, mode: int) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
+    except OSError as err:
+        raise SyncError(f"cannot create temporary file in '{path.parent}': {err}") from err
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             handle.write(content)
-        current_umask = os.umask(0o077)
-        os.umask(current_umask)
-        os.chmod(tmp_name, 0o666 & ~current_umask)
+        os.chmod(tmp_name, mode)
         os.replace(tmp_name, path)
-    except BaseException:
+    except BaseException as err:
         try:
             os.unlink(tmp_name)
         except OSError:
             pass
+        if isinstance(err, OSError):
+            raise SyncError(f"cannot write '{path}': {err}") from err
         raise
 
 
@@ -446,14 +461,21 @@ def sync_profiles(
         return 2
 
     if out_dir.is_dir():
-        for existing in sorted(out_dir.iterdir()):
+        try:
+            existing_entries = sorted(out_dir.iterdir())
+        except OSError as err:
+            raise SyncError(f"cannot list output directory '{out_dir}': {err}") from err
+        for existing in existing_entries:
             if (
                 existing.name not in expected
                 and is_managed_namespace(existing.name)
                 and existing.is_file()
                 and not existing.is_symlink()
             ):
-                text = existing.read_text(encoding="utf-8", errors="replace")
+                try:
+                    text = existing.read_text(encoding="utf-8", errors="replace")
+                except OSError as err:
+                    raise SyncError(f"cannot read '{existing}': {err}") from err
                 if PROVENANCE_RE.match(text):
                     print(
                         f"stale  {existing} was generated by an older herdr-multi-agent version; "
@@ -470,6 +492,7 @@ def sync_profiles(
                 drift = True
         return 1 if drift else 0
 
+    mode = current_file_mode()
     for filename in sorted(expected):
         status, _ = statuses[filename]
         target = out_dir / filename
@@ -479,7 +502,7 @@ def sync_profiles(
         if dry_run:
             print(f"would write  {target} ({status})")
         else:
-            atomic_write(target, expected[filename])
+            atomic_write(target, expected[filename], mode)
             print(f"write  {target}")
 
     return 0

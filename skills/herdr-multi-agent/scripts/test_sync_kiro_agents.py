@@ -30,10 +30,13 @@ class ModelResolutionTests(unittest.TestCase):
             "claude-opus-4.5",
             "claude-opus-4-6-20260201",
             "claude-opus-4.6-preview",
+            "claude-opus-4.6-1m",
+            "claude-opus-4.6-v1:0",
             "claude-opus-4-6",
             "claude-opus-4.6",
             "claude-sonnet-4-5-20250929",
             "claude-sonnet-4.6.0",
+            "claude-sonnet-4.6-200k",
             "claude-sonnet-4.6-20260301",
             "claude-sonnet-4.6",
             "claude-haiku-4.5",
@@ -41,7 +44,17 @@ class ModelResolutionTests(unittest.TestCase):
         self.assertEqual(ska.select_family_model(catalog, "opus"), "claude-opus-4.6")
         self.assertEqual(ska.select_family_model(catalog, "sonnet"), "claude-sonnet-4.6")
 
-    def test_patch_release_beats_lower_minor_and_newer_date_wins_among_dated_only(self) -> None:
+    def test_numeric_multi_digit_version_patch_and_date_tie_breaking(self) -> None:
+        # Multi-digit minor version (4.10 > 4.6 numerically, unlike lexicographical string sort)
+        self.assertEqual(
+            ska.select_family_model(["claude-opus-4.6", "claude-opus-4.10"], "opus"),
+            "claude-opus-4.10",
+        )
+        # Canonical non-provider-rev slug beats provider-rev slug even when provider-rev has a dot
+        self.assertEqual(
+            ska.select_family_model(["claude-opus-4.6-v1:0", "claude-opus-4-6"], "opus"),
+            "claude-opus-4-6",
+        )
         self.assertEqual(
             ska.select_family_model(["claude-opus-4.6", "claude-opus-4.6.1"], "opus"),
             "claude-opus-4.6.1",
@@ -65,7 +78,7 @@ class ModelResolutionTests(unittest.TestCase):
                     "models": [
                         {"id": "claude-opus-4.6", "provider": "anthropic"},
                         {"modelId": "claude-sonnet-4.6"},
-                        {"name": "bad\ninjection"},
+                        {"id": "bad\ninjection", "name": "claude-opus-9.9"},
                     ]
                 }
             ),
@@ -170,7 +183,7 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertIn("would write", out)
         self.assertFalse(self.out_dir.exists())
 
-        # Real sync writes exactly 13 .md files and zero .json files
+        # Real sync writes 13 .md files (2 herdr-* + 11 review-*) and zero .json files
         code, _, err = self.run_cli()
         self.assertEqual(code, 0, msg=err)
         written = sorted(p.name for p in self.out_dir.iterdir())
@@ -194,8 +207,9 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertIn("  - subagent\n", worker)
 
         # Verify every review-<lens>.md is structurally read-only, tier-mapped, and embeds its lens guide
-        forbidden_tools = ("fs_write", "fs_append", "str_replace", "delete_file", "  - write", "  - shell", "  - subagent")
-        for lens_name, tier in ska.LENS_TIERS.items():
+        lenses = ska.load_code_review_lenses(ska.DEFAULT_CODE_REVIEW_DIR)
+        self.assertEqual(len(lenses), 11)
+        for lens_name, (tier, lens_src) in lenses.items():
             path = self.out_dir / f"review-{lens_name}.md"
             text = path.read_text(encoding="utf-8")
             self.assertTrue(text.startswith(f"---\nname: review-{lens_name}\n"))
@@ -211,10 +225,8 @@ class SyncAndProvenanceTests(unittest.TestCase):
             self.assertIn("capability: fs_write\n      match:\n        - \"**\"\n      effect: deny", frontmatter)
             self.assertIn("not an external specialist override", frontmatter)
 
-            # Embedded lens rubric from skills/code-review/references/lenses/<lens>.md must be present
-            lens_src = (ska.DEFAULT_CODE_REVIEW_DIR / "references" / "lenses" / f"{lens_name}.md").read_text(encoding="utf-8").strip()
             self.assertIn(lens_src, body)
-            self.assertTrue(any(tok in body for tok in forbidden_tools) or "Edit nothing" in body)
+            self.assertIn("Edit nothing and mutate nothing.", body)
 
     def test_idempotent_rerun_and_drift_detection_for_model_or_lens_changes(self) -> None:
         self.assertEqual(self.run_cli()[0], 0)
@@ -279,6 +291,12 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("unmanaged file", err)
 
+        # Non-UTF-8 binary content in a managed path is also treated as a conflict (exit 2)
+        unmanaged.write_bytes(b"\xff\xfe\x00\x00invalid-utf8")
+        code_bin, _, err_bin = self.run_cli()
+        self.assertEqual(code_bin, 2)
+        self.assertIn("non-UTF-8", err_bin)
+
         # Replace with a symlink -> refused even with --force (prevents symlink clobber)
         victim = self.tmp_path / "victim.txt"
         victim.write_text("do not touch", encoding="utf-8")
@@ -303,7 +321,7 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertEqual(code_bad, 1)
         self.assertIn("code-review", err_bad)
 
-    def test_lens_content_drift_and_unmapped_lens_detection(self) -> None:
+    def test_lens_content_drift_and_tier_header_validation(self) -> None:
         cr_copy = self.tmp_path / "code-review"
         lenses_copy = cr_copy / "references" / "lenses"
         lenses_copy.mkdir(parents=True)
@@ -314,25 +332,36 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertEqual(self.run_cli("--code-review-dir", str(cr_copy))[0], 0)
         self.assertEqual(self.run_cli("--code-review-dir", str(cr_copy), "--check")[0], 0)
 
-        # Updating a single lens guide makes --check report stale (exit 1) until re-synced
-        (lenses_copy / "testing.md").write_text("# Updated Testing Rubric\nNew rule.\n", encoding="utf-8")
+        # Updating a lens guide (including '{{' syntax like GitHub Actions '${{ secrets.TOKEN }}')
+        # makes --check report stale (exit 1) and re-syncs cleanly without template errors
+        (lenses_copy / "testing.md").write_text(
+            "# Updated Testing Rubric\n\n- **Tier**: `flagship`\n- Guard `${{ secrets.API_KEY }}` in CI.\n",
+            encoding="utf-8",
+        )
         code, out, _ = self.run_cli("--code-review-dir", str(cr_copy), "--check")
         self.assertEqual(code, 1)
         self.assertIn("stale   " + str(self.out_dir / "review-testing.md"), out)
 
         self.assertEqual(self.run_cli("--code-review-dir", str(cr_copy))[0], 0)
         self.assertIn(
-            "# Updated Testing Rubric",
+            "${{ secrets.API_KEY }}",
             (self.out_dir / "review-testing.md").read_text(encoding="utf-8"),
         )
 
-        # Adding an unmapped lens file fails loud so LENS_TIERS cannot silently drift
-        (lenses_copy / "accessibility.md").write_text("# Extra\n", encoding="utf-8")
-        code_extra, _, err_extra = self.run_cli("--code-review-dir", str(cr_copy), "--check")
-        self.assertEqual(code_extra, 1)
-        self.assertIn("accessibility", err_extra)
+        # A lens file missing a valid '- **Tier**: `(flagship|fast/balanced)`' line fails loud
+        (lenses_copy / "broken.md").write_text("# Broken Lens Without Tier\n", encoding="utf-8")
+        code_bad_tier, _, err_bad_tier = self.run_cli("--code-review-dir", str(cr_copy), "--check")
+        self.assertEqual(code_bad_tier, 1)
+        self.assertIn("missing '- **Tier**:", err_bad_tier)
 
-    def test_out_dir_symlink_and_obsolete_managed_profile_warning(self) -> None:
+        # Empty lenses directory fails loud
+        for p in lenses_copy.glob("*.md"):
+            p.unlink()
+        code_empty, _, err_empty = self.run_cli("--code-review-dir", str(cr_copy), "--check")
+        self.assertEqual(code_empty, 1)
+        self.assertIn("no lens guide (.md) files found", err_empty)
+
+    def test_out_dir_symlink_is_refused(self) -> None:
         real_dir = self.tmp_path / "real-agents"
         real_dir.mkdir()
         link_dir = self.tmp_path / "symlink-agents"
@@ -345,7 +374,7 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn("symlink", stderr.getvalue())
 
-        # Obsolete managed review-*.md file triggers a non-destructive stale notice
+    def test_obsolete_managed_profile_emits_stale_warning(self) -> None:
         self.assertEqual(self.run_cli()[0], 0)
         obsolete = self.out_dir / "review-legacy.md"
         obsolete.write_text(

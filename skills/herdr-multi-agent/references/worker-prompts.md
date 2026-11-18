@@ -15,7 +15,7 @@
 ## First prompt of a worker (checklist)
 
 - The task id and where its plan lives.
-- The worker's host protocol file ([protocols/claude.md](protocols/claude.md), [protocols/agy.md](protocols/agy.md), or [protocols/fallback.md](protocols/fallback.md)) so the worker loads only its own host's skill, ask/sentinel, and review-dispatch mechanics.
+- The worker's host protocol file ([protocols/claude.md](protocols/claude.md), [protocols/agy.md](protocols/agy.md), [protocols/kiro.md](protocols/kiro.md), or [protocols/fallback.md](protocols/fallback.md)) so the worker loads only its own host's skill, ask/sentinel, and review-dispatch mechanics.
 - First command (rebase), then **the grill**: read the issue, rules and code, then run `grill-me` with the person in this pane ([grilling.md](grilling.md)) using the worker's protocol file. No implementation until the go message.
 - Scope: which operations of the plan are its own, and which are another task's.
 - Its wave and what it waits for.

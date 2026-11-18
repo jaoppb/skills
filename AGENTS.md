@@ -6,7 +6,7 @@ Instructions and guidelines for AI coding agents operating in this repository.
 
 ## 1. Repository Overview
 
-This repository (`jaoppb/skills`) is a curated collection of agent skills adhering to the [agentskills.io](https://agentskills.io) specification. It provides modular, versioned skills for autonomous coding agents (Claude Code, Gemini CLI / Antigravity, GitHub Copilot, Cursor, and others) distributed via the community `skills` CLI (`npx skills`).
+This repository (`jaoppb/skills`) is a curated collection of agent skills adhering to the [agentskills.io](https://agentskills.io) specification. It provides modular, versioned skills for autonomous coding agents (Claude Code, Gemini CLI / Antigravity, Kiro CLI, GitHub Copilot, Cursor, and others) distributed via the community `skills` CLI (`npx skills`).
 
 ---
 
@@ -30,7 +30,7 @@ Existing skills in this repo:
 - [`codebase-audit`](./skills/codebase-audit/SKILL.md): Whole-repo audit fanned out to subagents, producing a prioritized issue-ready report. Uses `references/` and `scripts/`.
 - [`grill-me`](./skills/grill-me/SKILL.md): Interrogates a spec, plan, or design one question at a time and writes the decisions back.
 - [`herdr`](./skills/herdr/SKILL.md): Standalone control of Herdr terminal multiplexer via CLI.
-- [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md): Coordinator and worker agent patterns across Herdr worktrees with multi-lens `code-review` loops and per-host protocols. Uses modular guides in `references/` and `references/protocols/`.
+- [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md): Coordinator and worker agent patterns across Herdr worktrees with multi-lens `code-review` loops and per-host protocols. Uses modular guides in `references/`, `references/protocols/`, and `references/kiro-agents/`, plus `scripts/sync_kiro_agents.py`.
 - [`spdd-bootstrap`](./skills/spdd-bootstrap/SKILL.md): Generates project-tailored SPDD skills (analysis, REASONS canvas, generate, prompt-update, and sync when canvases are committed) from templates in `references/templates/`, rendered by `scripts/render.py`.
 
 ---

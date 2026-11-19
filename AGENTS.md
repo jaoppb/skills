@@ -26,7 +26,7 @@ This repository (`jaoppb/skills`) is a curated collection of agent skills adheri
 ```
 
 Existing skills in this repo:
-- [`code-review`](./skills/code-review/SKILL.md): Multi-lens, read-only branch/PR review with mandatory `code-quality` structural baseline, 10 conditional specialist lenses, open external agent discovery, and smart delta re-runs. Uses `references/lenses/`.
+- [`code-review`](./skills/code-review/SKILL.md): Multi-lens, read-only branch/PR review with mandatory `code-quality` structural baseline, 11 conditional specialist lenses, open external agent discovery, and smart delta re-runs. Uses `references/lenses/`.
 - [`codebase-audit`](./skills/codebase-audit/SKILL.md): Whole-repo audit fanned out to subagents, producing a prioritized issue-ready report. Uses `references/` and `scripts/`.
 - [`grill-me`](./skills/grill-me/SKILL.md): Interrogates a spec, plan, or design one question at a time and writes the decisions back.
 - [`herdr`](./skills/herdr/SKILL.md): Standalone control of Herdr terminal multiplexer via CLI.

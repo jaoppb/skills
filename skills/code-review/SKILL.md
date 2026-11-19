@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: "Run a multi-lens, read-only specialist review on a branch diff or PR (`git diff origin/<base>...HEAD`). Always runs the mandatory `code-quality` baseline (structural rigor, <1k LOC guard, code-judo simplification), activates up to 10 conditional specialist lenses (`testing`, `security`, `data`, `devops`, `frontend`, `seo`, `product-owner`, `product-manager`, `performance`, `api-docs`) plus discovered external specialist agents, and uses smart delta re-runs across rounds. Use when reviewing existing code changes, diffs, branches, or pull requests. Do not use for whole-repository audits across untouched modules (use codebase-audit) or for interrogating a spec/plan before code exists (use grill-me)."
+description: "Run a multi-lens, read-only specialist review on a branch diff or PR (`git diff origin/<base>...HEAD`). Always runs the mandatory `code-quality` baseline (structural rigor, <1k LOC guard, code-judo simplification), activates up to 11 conditional specialist lenses (`testing`, `security`, `data`, `devops`, `observability`, `frontend`, `seo`, `product-owner`, `product-manager`, `performance`, `api-docs`) plus discovered external specialist agents, and uses smart delta re-runs across rounds. Use when reviewing existing code changes, diffs, branches, or pull requests. Do not use for whole-repository audits across untouched modules (use codebase-audit) or for interrogating a spec/plan before code exists (use grill-me)."
 ---
 
 # Code Review
@@ -22,6 +22,7 @@ code-review/
         ├── data.md              # DBA / Data Eng (flagship)
         ├── performance.md       # Performance (flagship)
         ├── devops.md            # SRE / Platform (fast/balanced)
+        ├── observability.md     # Tracing, metrics & logging (fast/balanced)
         ├── frontend.md          # UI / a11y / Impeccable audit (fast/balanced)
         ├── seo.md               # SEO / structured data / CWV (fast/balanced)
         ├── product-owner.md     # Acceptance & grill fidelity (fast/balanced)
@@ -51,7 +52,8 @@ Always run `code-quality`. Activate each conditional lens **only** when the diff
 | `security` | `flagship` | Auth/authz, input parsing, crypto, secrets, headers/CORS, file/shell/SQL ops, or dependencies changed | [security.md](references/lenses/security.md) |
 | `data` | `flagship` | Migrations, schemas, ORM models, queries, indexes, transactions, or PII handling changed | [data.md](references/lenses/data.md) |
 | `performance` | `flagship` | Hot paths, loops/queries, caching, concurrency, network waterfalls, memory/FD lifecycle, or bundle size affected | [performance.md](references/lenses/performance.md) |
-| `devops` | `fast/balanced` | CI/CD workflows, Docker/IaC, deploy scripts, runtime config/env, healthchecks, or telemetry infra changed | [devops.md](references/lenses/devops.md) |
+| `devops` | `fast/balanced` | CI/CD workflows, Docker/IaC, deploy scripts, runtime config/env, or healthchecks changed | [devops.md](references/lenses/devops.md) |
+| `observability` | `fast/balanced` | Tracing, metrics, structured logging, SLO/alert rules, workers/queues, or retry/error boundaries changed | [observability.md](references/lenses/observability.md) |
 | `frontend` | `fast/balanced` | UI components, styles, layout, client state, forms, or accessibility changed | [frontend.md](references/lenses/frontend.md) |
 | `seo` | `fast/balanced` | Public web pages, SSR/SSG routes, metadata/OG, canonicals, sitemaps, `robots.txt`, or JSON-LD changed | [seo.md](references/lenses/seo.md) |
 | `product-owner` | `fast/balanced` | Issue/spec/grill decisions or user-facing acceptance criteria exist for the branch | [product-owner.md](references/lenses/product-owner.md) |
@@ -80,7 +82,7 @@ Select the sub-agent model tier by lens depth using portable capability tiers (m
 | Tier | Capability | Lenses |
 | :--- | :--- | :--- |
 | `flagship` | Strongest reasoning tier | `code-quality`, `testing`, `security`, `data`, `performance` (and deep-tagged external agents) |
-| `fast/balanced` | Fast general-purpose tier | `frontend`, `seo`, `devops`, `product-owner`, `product-manager`, `api-docs` (and external agents by default) |
+| `fast/balanced` | Fast general-purpose tier | `frontend`, `seo`, `devops`, `observability`, `product-owner`, `product-manager`, `api-docs` (and external agents by default) |
 
 ---
 

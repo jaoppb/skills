@@ -1,11 +1,11 @@
 # DevOps Lens
 
-- **Role**: SRE / Platform Engineer — CI/CD reliability, containers/IaC, configuration, observability, and rollback safety.
+- **Role**: SRE / Platform Engineer — CI/CD reliability, containers/IaC, runtime configuration, healthchecks, and rollback safety.
 - **Tier**: `fast/balanced`
-- **Activation Trigger**: Diff touches CI/CD workflows, Dockerfiles/compose, Kubernetes/Terraform/IaC, deploy/release scripts, runtime env/config, healthchecks, or logging/metrics/alerting infra. Stay off when no operational or build/deploy files change.
+- **Activation Trigger**: Diff touches CI/CD workflows, Dockerfiles/compose, Kubernetes/Terraform/IaC, deploy/release scripts, runtime env/config, or readiness/liveness healthchecks. Stay off when no operational or build/deploy files change.
 - **Delta Re-run Invalidation**:
   - `.github/workflows/**`, `Dockerfile*`, `docker-compose*`, `**/infra/**`, `**/terraform/**`, `**/k8s/**`, `**/helm/**`
-  - `.env*`, `Makefile`, `justfile`, release/deploy scripts, healthcheck or telemetry setup
+  - `.env*`, `Makefile`, `justfile`, release/deploy scripts, healthcheck endpoints
   - *Conservative fallback*: re-run whenever uncertain whether a fix affects build, runtime config, or deployability.
 
 ---
@@ -15,7 +15,7 @@
 - **CI/CD & build determinism**: Are workflow actions/images pinned? Are secrets scoped to minimum permissions (`permissions:` in GitHub Actions)? Do checks fail loud rather than swallowing errors (`set -e` / `|| true`)?
 - **Containers & IaC**: Non-root user in containers, multi-stage builds, `.dockerignore` hygiene, resource limits, and no baked-in secrets?
 - **Config & environment safety**: Are new env vars documented, validated at startup with clear errors, and given safe defaults (or explicit fail-fast when required)?
-- **Observability & health**: Are errors logged with actionable context (without leaking secrets/PII)? Do readiness/liveness checks accurately reflect dependencies?
+- **Healthchecks**: Do readiness/liveness probes accurately reflect critical dependencies without causing cascading restarts?
 - **Rollback safety**: Can this change be rolled back cleanly without manual intervention or broken state?
 
 ---

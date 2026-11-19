@@ -1,6 +1,6 @@
 ---
 name: grill-me
-description: Interrogate the user's idea, spec, plan, or design to expose gaps, unstated assumptions, and undecided trade-offs — one hard question at a time — then write the sharpened decisions back into the artifact (or output them in chat if no artifact exists). Use when the user says "grill me", "poke holes in this", "interrogate my spec", "what am I missing", "challenge this plan", or hands over a vague spec/RFC/plan and wants it hardened before implementation. Not for reviewing code that already exists (use code-review) and not for quizzing the user's knowledge.
+description: Interrogate the user's idea, spec, plan, or design to expose gaps, unstated assumptions, and undecided trade-offs — one hard question at a time — then write the sharpened decisions back into the artifact (or output them in chat if no artifact exists). Use when the user says "grill me", "poke holes in this", "interrogate my spec", "what am I missing", "challenge this plan", or hands over a vague spec/RFC/plan and wants it hardened before implementation. Not for reviewing code or documentation diffs that already exist (use diff-review), not for asynchronous multi-lens review of an already-drafted issue breakdown or plan (use plan-review), and not for quizzing the user's knowledge.
 ---
 
 # Grill Me

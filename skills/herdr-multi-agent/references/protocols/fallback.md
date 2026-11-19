@@ -14,7 +14,7 @@ If the person specified explicit native flags for `<kind>`, pass them after `--`
 
 ## 2. Skill Invocation
 
-Read each skill's `SKILL.md` file directly from disk (`grill-me`, `code-review`, `herdr`) and execute its workflow inline.
+Read each skill's `SKILL.md` file directly from disk (`grill-me`, `diff-review`, `plan-review`, `herdr`) and execute its workflow inline.
 
 ## 3. Asking the Person (`[WAITING-FOR-PERSON]` Sentinel)
 
@@ -24,12 +24,13 @@ Prose-only CLI hosts finish a question turn in `agent_status == idle` or `done` 
 2. Place the literal sentinel `[WAITING-FOR-PERSON]` **on its own final line** at the very end of the message, then stop immediately with no trailing text.
 3. Never emit `[WAITING-FOR-PERSON]` on non-question turns. Any peer checking `--source visible` ([../reporting-protocol.md](../reporting-protocol.md)) treats a latest turn ending in `[WAITING-FOR-PERSON]` as blocked on the person.
 
-## 4. Read-Only Review Dispatch via Temporary Herdr Tabs (`code-review`)
+## 4. Read-Only Review Dispatch via Temporary Herdr Tabs (`diff-review` & `plan-review`)
 
-When the host has no native read-only sub-agent tool, run [../review.md](../review.md) and `code-review` ([code-review/SKILL.md](../../../code-review/SKILL.md)) in temporary workspace tabs:
+When the host has no native read-only sub-agent tool, run [../review.md](../review.md) with `diff-review` ([diff-review/SKILL.md](../../../diff-review/SKILL.md)) or `plan-review` ([plan-review/SKILL.md](../../../plan-review/SKILL.md)) in temporary workspace tabs:
 
-1. **Write diff artifacts & snapshot worktree state**:
-   - Write `/tmp/diff-<task>-r<n>.patch`, `/tmp/files-<task>-r<n>.txt`, and (on Round N+1) `/tmp/delta-<task>-r<n>.patch` per [../review.md](../review.md).
+1. **Write `/tmp` review artifacts & snapshot worktree state**:
+   - For `diff-review`: write `/tmp/diff-<task>-r<n>.patch`, `/tmp/files-<task>-r<n>.txt`, and (on Round N+1) `/tmp/delta-<task>-r<n>.patch` per [../review.md](../review.md).
+   - For `plan-review`: write `/tmp/plan-<slug>-r<n>.md` and (on Round N+1) `/tmp/plan-delta-<slug>-r<n>.diff` per [../review.md](../review.md).
    - Record `git rev-parse HEAD` and `git status --porcelain` before starting reviewers so unauthorized writes by CLI agents are caught immediately.
 2. **Keep Tab 1 untouched; create up to 2 temporary review tabs (up to 4 panes each)**:
    - **Tab 1 (`$HERDR_TAB_ID`) remains exclusively for the main worker agent** — never split the worker's own tab.

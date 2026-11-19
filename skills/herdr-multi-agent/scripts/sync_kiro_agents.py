@@ -4,16 +4,18 @@
 Usage:
     python3 sync_kiro_agents.py [--check] [--dry-run] [--force]
                                 [--out-dir ~/.kiro/agents]
-                                [--code-review-dir <path>]
+                                [--diff-review-dir <path>]
+                                [--plan-review-dir <path>]
                                 [--opus-model <slug>] [--sonnet-model <slug>]
                                 [--models-json <path>] [--allow-auto-fallback]
                                 [--print-models]
 
 Renders and installs the namespaced Kiro custom agent profiles managed by
-herdr-multi-agent (`herdr-coordinator.md`, `herdr-worker.md`, and read-only
-`review-<lens>.md` wrappers embedding `code-review/references/lenses/<lens>.md`)
-into `~/.kiro/agents/` without touching task git worktrees or non-namespaced
-user agents.
+herdr-multi-agent (`herdr-coordinator.md`, `herdr-worker.md`, read-only
+`diff-review-<lens>.md` wrappers embedding `diff-review/references/lenses/<lens>.md`,
+and read-only `plan-review-<lens>.md` wrappers embedding
+`plan-review/references/lenses/<lens>.md`) into `~/.kiro/agents/` without
+touching task git worktrees or non-namespaced user agents.
 
 Each managed `.md` file embeds an HTML provenance comment immediately after its
 YAML frontmatter (`<!-- herdr-multi-agent-managed: sha256=<digest> -->`; no
@@ -41,7 +43,8 @@ from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = SKILL_DIR / "references" / "kiro-agents"
-DEFAULT_CODE_REVIEW_DIR = SKILL_DIR.parent / "code-review"
+DEFAULT_DIFF_REVIEW_DIR = SKILL_DIR.parent / "diff-review"
+DEFAULT_PLAN_REVIEW_DIR = SKILL_DIR.parent / "plan-review"
 DEFAULT_OUT_DIR = Path.home() / ".kiro" / "agents"
 
 MODEL_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
@@ -244,13 +247,13 @@ def resolve_models(
     return resolved["opus"], resolved["sonnet"]
 
 
-def load_code_review_lenses(code_review_dir: Path) -> dict[str, tuple[str, str]]:
-    """Load (tier, body) for every lens guide in <code-review-dir>/references/lenses/*.md."""
-    lenses_dir = code_review_dir / "references" / "lenses"
+def load_review_lenses(skill_dir: Path, *, skill_name: str, cli_flag: str) -> dict[str, tuple[str, str]]:
+    """Load (tier, body) for every lens guide in <skill-dir>/references/lenses/*.md."""
+    lenses_dir = skill_dir / "references" / "lenses"
     if not lenses_dir.is_dir():
         raise SyncError(
-            f"companion code-review lenses directory not found at '{lenses_dir}' "
-            "(install 'code-review' alongside 'herdr-multi-agent' or pass --code-review-dir)"
+            f"companion {skill_name} lenses directory not found at '{lenses_dir}' "
+            f"(install '{skill_name}' alongside 'herdr-multi-agent' or pass {cli_flag})"
         )
 
     try:
@@ -305,7 +308,8 @@ def build_expected_profiles(
     *,
     opus_model: str,
     sonnet_model: str,
-    code_review_dir: Path = DEFAULT_CODE_REVIEW_DIR,
+    diff_review_dir: Path = DEFAULT_DIFF_REVIEW_DIR,
+    plan_review_dir: Path = DEFAULT_PLAN_REVIEW_DIR,
     templates_dir: Path = TEMPLATES_DIR,
 ) -> dict[str, str]:
     """Render all managed Kiro custom agent files in memory."""
@@ -314,19 +318,26 @@ def build_expected_profiles(
 
     coord_tpl_path = templates_dir / "herdr-coordinator.md"
     worker_tpl_path = templates_dir / "herdr-worker.md"
-    lens_tpl_path = templates_dir / "review-lens.md"
-    for path in (coord_tpl_path, worker_tpl_path, lens_tpl_path):
+    diff_lens_tpl_path = templates_dir / "diff-review-lens.md"
+    plan_lens_tpl_path = templates_dir / "plan-review-lens.md"
+    for path in (coord_tpl_path, worker_tpl_path, diff_lens_tpl_path, plan_lens_tpl_path):
         if not path.is_file():
             raise SyncError(f"missing Kiro agent template: {path}")
 
     try:
         coord_tpl = coord_tpl_path.read_text(encoding="utf-8")
         worker_tpl = worker_tpl_path.read_text(encoding="utf-8")
-        lens_template = lens_tpl_path.read_text(encoding="utf-8")
+        diff_lens_template = diff_lens_tpl_path.read_text(encoding="utf-8")
+        plan_lens_template = plan_lens_tpl_path.read_text(encoding="utf-8")
     except OSError as err:
         raise SyncError(f"cannot read Kiro agent template: {err}") from err
 
-    lenses = load_code_review_lenses(code_review_dir)
+    diff_lenses = load_review_lenses(
+        diff_review_dir, skill_name="diff-review", cli_flag="--diff-review-dir"
+    )
+    plan_lenses = load_review_lenses(
+        plan_review_dir, skill_name="plan-review", cli_flag="--plan-review-dir"
+    )
 
     common = {"OPUS_MODEL": opus_model, "SONNET_MODEL": sonnet_model}
     profiles: dict[str, str] = {
@@ -334,20 +345,24 @@ def build_expected_profiles(
         "herdr-worker.md": render_with_provenance(worker_tpl, common),
     }
 
-    for lens_name, (tier, lens_body) in sorted(lenses.items()):
-        agent_name = f"review-{lens_name}"
-        model = opus_model if tier == "flagship" else sonnet_model
-        rendered = render_with_provenance(
-            lens_template,
-            {
-                "AGENT_NAME": agent_name,
-                "LENS_NAME": lens_name,
-                "TIER": tier,
-                "MODEL": model,
-                "LENS_BODY": lens_body,
-            },
-        )
-        profiles[f"{agent_name}.md"] = rendered
+    for prefix, template, lenses in (
+        ("diff-review", diff_lens_template, diff_lenses),
+        ("plan-review", plan_lens_template, plan_lenses),
+    ):
+        for lens_name, (tier, lens_body) in sorted(lenses.items()):
+            agent_name = f"{prefix}-{lens_name}"
+            model = opus_model if tier == "flagship" else sonnet_model
+            rendered = render_with_provenance(
+                template,
+                {
+                    "AGENT_NAME": agent_name,
+                    "LENS_NAME": lens_name,
+                    "TIER": tier,
+                    "MODEL": model,
+                    "LENS_BODY": lens_body,
+                },
+            )
+            profiles[f"{agent_name}.md"] = rendered
 
     return profiles
 
@@ -418,7 +433,10 @@ def atomic_write(path: Path, content: str, mode: int) -> None:
 
 def is_managed_namespace(filename: str) -> bool:
     return filename.endswith(".md") and (
-        filename.startswith("herdr-") or filename.startswith("review-")
+        filename.startswith("herdr-")
+        or filename.startswith("diff-review-")
+        or filename.startswith("plan-review-")
+        or filename.startswith("review-")
     )
 
 
@@ -517,10 +535,16 @@ def build_parser() -> argparse.ArgumentParser:
         help="target Kiro agents directory (default: ~/.kiro/agents)",
     )
     parser.add_argument(
-        "--code-review-dir",
+        "--diff-review-dir",
         type=Path,
-        default=DEFAULT_CODE_REVIEW_DIR,
-        help="path to companion code-review skill directory",
+        default=DEFAULT_DIFF_REVIEW_DIR,
+        help="path to companion diff-review skill directory",
+    )
+    parser.add_argument(
+        "--plan-review-dir",
+        type=Path,
+        default=DEFAULT_PLAN_REVIEW_DIR,
+        help="path to companion plan-review skill directory",
     )
     parser.add_argument(
         "--check",
@@ -535,7 +559,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="overwrite hand-edited or pre-existing unmanaged herdr-*.md / review-*.md files",
+        help="overwrite hand-edited or pre-existing unmanaged herdr-*.md / diff-review-*.md / plan-review-*.md files",
     )
     parser.add_argument(
         "--opus-model",
@@ -579,7 +603,8 @@ def main(argv: list[str] | None = None) -> int:
         expected = build_expected_profiles(
             opus_model=opus_model,
             sonnet_model=sonnet_model,
-            code_review_dir=args.code_review_dir,
+            diff_review_dir=args.diff_review_dir,
+            plan_review_dir=args.plan_review_dir,
         )
         return sync_profiles(
             expected,

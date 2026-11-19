@@ -4,18 +4,18 @@ Host-specific mechanics for coordinators and workers running under `--kind kiro`
 
 ## 1. Coordinator Preflight (`~/.kiro/agents/` Sync)
 
-`kiro-cli` enforces sub-agent tool restrictions (`tools: ["read"]` for read-only reviewers and `subagent` for orchestrators) through static custom agent profiles. To keep every Herdr task worktree `git status -sb` clean for [../cleanup.md](../cleanup.md) without writing untracked `.kiro/agents/` files into worktrees, `herdr-multi-agent` syncs 13 namespaced profiles (`herdr-coordinator.md`, `herdr-worker.md`, and 11 `review-<lens>.md` wrappers rendered from [../kiro-agents/herdr-coordinator.md](../kiro-agents/herdr-coordinator.md), [../kiro-agents/herdr-worker.md](../kiro-agents/herdr-worker.md), and [../kiro-agents/review-lens.md](../kiro-agents/review-lens.md)) into `~/.kiro/agents/` via [../../scripts/sync_kiro_agents.py](../../scripts/sync_kiro_agents.py).
+`kiro-cli` enforces sub-agent tool restrictions (`tools: ["read"]` for read-only reviewers and `subagent` for orchestrators) through static custom agent profiles. To keep every Herdr task worktree `git status -sb` clean for [../cleanup.md](../cleanup.md) without writing untracked `.kiro/agents/` files into worktrees, `herdr-multi-agent` syncs namespaced profiles (`herdr-coordinator.md`, `herdr-worker.md`, `diff-review-<lens>.md`, and `plan-review-<lens>.md` wrappers rendered from [../kiro-agents/herdr-coordinator.md](../kiro-agents/herdr-coordinator.md), [../kiro-agents/herdr-worker.md](../kiro-agents/herdr-worker.md), [../kiro-agents/diff-review-lens.md](../kiro-agents/diff-review-lens.md), and [../kiro-agents/plan-review-lens.md](../kiro-agents/plan-review-lens.md)) into `~/.kiro/agents/` via [../../scripts/sync_kiro_agents.py](../../scripts/sync_kiro_agents.py).
 
-Before spawning any `--kind kiro` workers, the coordinator runs:
+Before spawning any `--kind kiro` workers (or running pre-wave `plan-review` via `subagent`), the coordinator runs:
 
 ```bash
 python3 <skill-dir>/scripts/sync_kiro_agents.py --check
 ```
 
 Handle the exit code strictly:
-- **Exit `0`**: All 13 managed profiles are present, unedited, and synced to the host's current `kiro-cli` models and `code-review` lenses.
+- **Exit `0`**: All managed profiles are present, unedited, and synced to the host's current `kiro-cli` models and companion `diff-review` / `plan-review` lenses.
 - **Exit `1` (`missing` or `stale` profiles)**: Run `python3 <skill-dir>/scripts/sync_kiro_agents.py` once to install or refresh untouched managed profiles automatically. If that run fails, stop and ask the person (ending with `[WAITING-FOR-PERSON]`, or using your coordinator protocol's blocking ask tool if the coordinator is not `kiro`).
-- **Exit `1` (`error:` — missing `kiro-cli`, unavailable Opus/Sonnet tier, or missing companion `code-review` skill) or Exit `2` (hand-edited/unmanaged `herdr-*.md` or `review-*.md` conflict, or unsafe symlink/non-directory/non-regular target)**: **Never** pass `--force` or `--allow-auto-fallback` silently. Report the exact error to the person and ask whether to pass explicit `--opus-model` / `--sonnet-model`, `--allow-auto-fallback`, or `--force` (ending with `[WAITING-FOR-PERSON]`, or using your coordinator protocol's blocking ask tool if the coordinator is not `kiro`).
+- **Exit `1` (`error:` — missing `kiro-cli`, unavailable Opus/Sonnet tier, or missing companion `diff-review` / `plan-review` skill) or Exit `2` (hand-edited/unmanaged `herdr-*.md`, `diff-review-*.md`, or `plan-review-*.md` conflict, or unsafe symlink/non-directory/non-regular target)**: **Never** pass `--force` or `--allow-auto-fallback` silently. Report the exact error to the person and ask whether to pass explicit `--opus-model` / `--sonnet-model`, `--allow-auto-fallback`, or `--force` (ending with `[WAITING-FOR-PERSON]`, or using your coordinator protocol's blocking ask tool if the coordinator is not `kiro`).
 
 ## 2. Startup & Model Flags
 
@@ -42,7 +42,7 @@ herdr agent start <name> --kind kiro --pane <pane-id> -- --agent herdr-worker --
 
 ## 4. Skill Invocation
 
-- Invoke `/grill-me` and `/code-review` directly when registered as slash commands, or activate/read each skill's `SKILL.md` (`grill-me`, `code-review`, `herdr`) via `disclose_context` / `read` (`read_file`) and execute its workflow inline.
+- Invoke `/grill-me`, `/diff-review`, and `/plan-review` directly when registered as slash commands, or activate/read each skill's `SKILL.md` (`grill-me`, `diff-review`, `plan-review`, `herdr`) via `disclose_context` / `read` (`read_file`) and execute its workflow inline.
 
 ## 5. Asking the Person (`[WAITING-FOR-PERSON]` Sentinel)
 
@@ -52,16 +52,16 @@ Because `kiro-cli` does not expose a blocking multiple-choice TUI dialog tool, K
 2. Place the literal sentinel `[WAITING-FOR-PERSON]` **on its own final line** at the very end of the message, then stop immediately with no trailing text.
 3. Never emit `[WAITING-FOR-PERSON]` on non-question turns. Any peer checking `--source visible` ([../reporting-protocol.md](../reporting-protocol.md)) treats a latest turn ending in `[WAITING-FOR-PERSON]` as blocked on the person.
 
-## 6. Read-Only Review Dispatch (`code-review`)
+## 6. Read-Only Review Dispatch (`diff-review` & `plan-review`)
 
-Follow [../review.md](../review.md) and the installed `code-review` skill ([code-review/SKILL.md](../../../code-review/SKILL.md)):
+Follow [../review.md](../review.md) and the installed `diff-review` ([diff-review/SKILL.md](../../../diff-review/SKILL.md)) or `plan-review` ([plan-review/SKILL.md](../../../plan-review/SKILL.md)) skill:
 
-1. **Ignore managed wrappers during Open Discovery**: When scanning `.kiro/agents/` and `~/.kiro/agents/` under `code-review` §3, ignore `herdr-coordinator.md`, `herdr-worker.md`, and the 11 managed `review-<lens>.md` profiles (marked with `<!-- herdr-multi-agent-managed: ... -->` and `"not an external specialist override"` per [../review.md](../review.md)).
-2. **Write `/tmp` diff artifacts first**: Synced `review-<lens>.md` profiles enforce read-only execution structurally via pure `tools: ["read"]` (omitting `write` / `fs_write` / `fs_append` / `str_replace` / `delete_file`, `shell`, and `subagent`, with `fs_read` pre-allowed on `/tmp/**`). Because reviewers have no `shell` tool, write `/tmp/diff-<task>-r<n>.patch`, `/tmp/files-<task>-r<n>.txt`, and (on Round N+1) `/tmp/delta-<task>-r<n>.patch` before each round per [../review.md](../review.md). Never write `.kiro/agents/` files into the worktree.
-3. **One fresh `subagent` (`invoke_sub_agent`) call per active lens per round**: Invoke Kiro's native `subagent` (`invoke_sub_agent`) tool in parallel targeting the synced `review-<lens>` custom agent (or a discovered read-only external `.kiro/agents/<specialist>` profile), passing the canonical reviewer brief from [../review.md](../review.md). Never combine multiple lenses into one sub-agent, and never reuse a sub-agent across rounds.
-   - **Two-tier frontmatter model mapping** (synced into `~/.kiro/agents/review-<lens>.md` by `sync_kiro_agents.py`, inheriting session effort):
-     - `flagship` (`code-quality`, `testing`, `security`, `data`, `performance`) → `<opus-id>`
-     - `fast/balanced` (`devops`, `frontend`, `seo`, `product-owner`, `product-manager`, `api-docs`) → `<sonnet-id>`
-4. **Fallback CLI review tabs**: If Kiro's native `subagent` tool is unavailable (or an external specialist lacks a read-only Kiro profile), run temporary Herdr review tabs per [fallback.md](fallback.md) §4, starting each reviewer with `--kind kiro` and explicit two-tier flags after `--` (include `--agent review-<lens>` for the 11 built-in `code-review` lenses, and omit `--agent` when running an external specialist lacking a read-only Kiro profile, relying on [fallback.md](fallback.md) §4 step 5's worktree-cleanliness check):
-   - `flagship` → `-- [--agent review-<lens>] --model <opus-id> --effort medium`
-   - `fast/balanced` → `-- [--agent review-<lens>] --model <sonnet-id> --effort high`
+1. **Ignore managed wrappers during Open Discovery**: When scanning `.kiro/agents/` and `~/.kiro/agents/` under `diff-review` §3 or `plan-review` §3, ignore `herdr-coordinator.md`, `herdr-worker.md`, managed `diff-review-<lens>.md` and `plan-review-<lens>.md` profiles, and any legacy `review-<lens>.md` profiles (marked with `<!-- herdr-multi-agent-managed: ... -->` and `"not an external specialist override"` per [../review.md](../review.md)).
+2. **Write `/tmp` artifacts first**: Synced `diff-review-<lens>.md` and `plan-review-<lens>.md` profiles enforce read-only execution structurally via pure `tools: ["read"]` (omitting `write` / `fs_write` / `fs_append` / `str_replace` / `delete_file`, `shell`, and `subagent`, with `fs_read` pre-allowed on `/tmp/**`). Because reviewers have no `shell` tool, write `/tmp/diff-<task>-r<n>.patch`, `/tmp/files-<task>-r<n>.txt`, and (on Round N+1) `/tmp/delta-<task>-r<n>.patch` before each `diff-review` round — or `/tmp/plan-<slug>-r<n>.md` and (on Round N+1) `/tmp/plan-delta-<slug>-r<n>.diff` before each `plan-review` round — per [../review.md](../review.md). Never write `.kiro/agents/` files into the worktree.
+3. **One fresh `subagent` (`invoke_sub_agent`) call per active lens per round**: Invoke Kiro's native `subagent` (`invoke_sub_agent`) tool in parallel targeting the synced `diff-review-<lens>` (worker diff review) or `plan-review-<lens>` (coordinator pre-wave plan review) custom agent — or a discovered read-only external `.kiro/agents/<specialist>` profile — passing the canonical reviewer brief from [../review.md](../review.md). Never combine multiple lenses into one sub-agent, and never reuse a sub-agent across rounds.
+   - **Two-tier frontmatter model mapping** (synced into `~/.kiro/agents/{diff-review,plan-review}-<lens>.md` by `sync_kiro_agents.py`, inheriting session effort):
+     - `flagship` → `<opus-id>` (`diff-review`: `code-quality`, `docs-quality`, `testing`, `security`, `data`, `performance`; `plan-review`: `plan-quality`, `feasibility`, `slicing-and-dependencies`, `risk`)
+     - `fast/balanced` → `<sonnet-id>` (`diff-review`: `devops`, `observability`, `frontend`, `seo`, `product-owner`, `product-manager`, `api-docs`; `plan-review`: `product-alignment`)
+4. **Fallback CLI review tabs**: If Kiro's native `subagent` tool is unavailable (or an external specialist lacks a read-only Kiro profile), run temporary Herdr review tabs per [fallback.md](fallback.md) §4, starting each reviewer with `--kind kiro` and explicit two-tier flags after `--` (include `--agent diff-review-<lens>` or `--agent plan-review-<lens>` for built-in lenses, and omit `--agent` when running an external specialist lacking a read-only Kiro profile, relying on [fallback.md](fallback.md) §4 step 5's worktree-cleanliness check):
+   - `flagship` → `-- [--agent <prefix>-<lens>] --model <opus-id> --effort medium`
+   - `fast/balanced` → `-- [--agent <prefix>-<lens>] --model <sonnet-id> --effort high`

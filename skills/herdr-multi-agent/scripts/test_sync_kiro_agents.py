@@ -171,7 +171,7 @@ class SyncAndProvenanceTests(unittest.TestCase):
             )
         return code, stdout.getvalue(), stderr.getvalue()
 
-    def test_sync_installs_13_profiles_with_strict_readonly_reviewers_and_no_sidecar_json(self) -> None:
+    def test_sync_installs_all_profiles_with_strict_readonly_reviewers_and_no_sidecar_json(self) -> None:
         # Before first sync, --check exits 1 (missing)
         code, out, _ = self.run_cli("--check")
         self.assertEqual(code, 1)
@@ -183,11 +183,11 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertIn("would write", out)
         self.assertFalse(self.out_dir.exists())
 
-        # Real sync writes 13 .md files (2 herdr-* + 11 review-*) and zero .json files
+        # Real sync writes 20 .md files (2 herdr-* + 13 diff-review-* + 5 plan-review-*) and zero .json files
         code, _, err = self.run_cli()
         self.assertEqual(code, 0, msg=err)
         written = sorted(p.name for p in self.out_dir.iterdir())
-        self.assertEqual(len(written), 13)
+        self.assertEqual(len(written), 20)
         self.assertTrue(all(name.endswith(".md") for name in written))
         self.assertIn("herdr-coordinator.md", written)
         self.assertIn("herdr-worker.md", written)
@@ -206,31 +206,44 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertIn("\nmodel: claude-opus-4.6\n", worker)
         self.assertIn("  - subagent\n", worker)
 
-        # Verify every review-<lens>.md is structurally read-only, tier-mapped, and embeds its lens guide
-        lenses = ska.load_code_review_lenses(ska.DEFAULT_CODE_REVIEW_DIR)
-        self.assertEqual(len(lenses), 11)
-        for lens_name, (tier, lens_src) in lenses.items():
-            path = self.out_dir / f"review-{lens_name}.md"
-            text = path.read_text(encoding="utf-8")
-            self.assertTrue(text.startswith(f"---\nname: review-{lens_name}\n"))
-            _, frontmatter, body = text.split("---", 2)
+        # Verify every diff-review-<lens>.md and plan-review-<lens>.md is structurally read-only,
+        # tier-mapped, and embeds its lens guide
+        diff_lenses = ska.load_review_lenses(
+            ska.DEFAULT_DIFF_REVIEW_DIR, skill_name="diff-review", cli_flag="--diff-review-dir"
+        )
+        plan_lenses = ska.load_review_lenses(
+            ska.DEFAULT_PLAN_REVIEW_DIR, skill_name="plan-review", cli_flag="--plan-review-dir"
+        )
+        self.assertEqual(len(diff_lenses), 13)
+        self.assertEqual(len(plan_lenses), 5)
 
-            expected_model = "claude-opus-4.6" if tier == "flagship" else "claude-sonnet-4.6"
-            self.assertIn(f"\nmodel: {expected_model}\n", frontmatter)
-            self.assertIn("\ntools:\n  - read\n", frontmatter)
-            for forbidden in ("  - write", "  - shell", "  - subagent", "str_replace", "delete_file", "fs_append"):
-                self.assertNotIn(forbidden, frontmatter)
-            self.assertIn("capability: fs_read", frontmatter)
-            self.assertIn('"/tmp/**"', frontmatter)
-            self.assertIn("capability: fs_write\n      match:\n        - \"**\"\n      effect: deny", frontmatter)
-            self.assertIn("not an external specialist override", frontmatter)
+        for prefix, lenses, artifact_hint in (
+            ("diff-review", diff_lenses, "/tmp/diff-<task>-r<n>.patch"),
+            ("plan-review", plan_lenses, "/tmp/plan-<slug>-r<n>.md"),
+        ):
+            for lens_name, (tier, lens_src) in lenses.items():
+                path = self.out_dir / f"{prefix}-{lens_name}.md"
+                text = path.read_text(encoding="utf-8")
+                self.assertTrue(text.startswith(f"---\nname: {prefix}-{lens_name}\n"))
+                _, frontmatter, body = text.split("---", 2)
 
-            self.assertIn(lens_src, body)
-            self.assertIn("Edit nothing and mutate nothing.", body)
+                expected_model = "claude-opus-4.6" if tier == "flagship" else "claude-sonnet-4.6"
+                self.assertIn(f"\nmodel: {expected_model}\n", frontmatter)
+                self.assertIn("\ntools:\n  - read\n", frontmatter)
+                for forbidden in ("  - write", "  - shell", "  - subagent", "str_replace", "delete_file", "fs_append"):
+                    self.assertNotIn(forbidden, frontmatter)
+                self.assertIn("capability: fs_read", frontmatter)
+                self.assertIn('"/tmp/**"', frontmatter)
+                self.assertIn("capability: fs_write\n      match:\n        - \"**\"\n      effect: deny", frontmatter)
+                self.assertIn("not an external specialist override", frontmatter)
+
+                self.assertIn(artifact_hint, body)
+                self.assertIn(lens_src, body)
+                self.assertIn("Edit nothing and mutate nothing.", body)
 
     def test_idempotent_rerun_and_drift_detection_for_model_or_lens_changes(self) -> None:
         self.assertEqual(self.run_cli()[0], 0)
-        target = self.out_dir / "review-code-quality.md"
+        target = self.out_dir / "diff-review-code-quality.md"
         mtime_before = target.stat().st_mtime_ns
 
         # Second run is a no-op and preserves mtime
@@ -265,7 +278,7 @@ class SyncAndProvenanceTests(unittest.TestCase):
         )
 
         # Hand-edit a managed file -> both --check and sync refuse with exit 2 unless --force
-        managed = self.out_dir / "review-security.md"
+        managed = self.out_dir / "diff-review-security.md"
         managed.write_text(managed.read_text(encoding="utf-8") + "\nHand edit!\n", encoding="utf-8")
 
         code_check, _, err_check = self.run_cli("--check")
@@ -308,7 +321,7 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertIn("symlink target refused", err_force)
         self.assertEqual(victim.read_text(encoding="utf-8"), "do not touch")
 
-    def test_missing_code_review_dir_fails_loud_and_print_models_outputs_json(self) -> None:
+    def test_missing_review_dirs_fail_loud_and_print_models_outputs_json(self) -> None:
         code, out, _ = self.run_cli("--print-models")
         self.assertEqual(code, 0)
         self.assertEqual(
@@ -316,21 +329,26 @@ class SyncAndProvenanceTests(unittest.TestCase):
             {"opus": "claude-opus-4.6", "sonnet": "claude-sonnet-4.6"},
         )
 
-        bad_cr = self.tmp_path / "missing-code-review"
-        code_bad, _, err_bad = self.run_cli("--code-review-dir", str(bad_cr))
+        bad_dr = self.tmp_path / "missing-diff-review"
+        code_bad, _, err_bad = self.run_cli("--diff-review-dir", str(bad_dr))
         self.assertEqual(code_bad, 1)
-        self.assertIn("code-review", err_bad)
+        self.assertIn("diff-review", err_bad)
+
+        bad_pr = self.tmp_path / "missing-plan-review"
+        code_bad_pr, _, err_bad_pr = self.run_cli("--plan-review-dir", str(bad_pr))
+        self.assertEqual(code_bad_pr, 1)
+        self.assertIn("plan-review", err_bad_pr)
 
     def test_lens_content_drift_and_tier_header_validation(self) -> None:
-        cr_copy = self.tmp_path / "code-review"
-        lenses_copy = cr_copy / "references" / "lenses"
+        dr_copy = self.tmp_path / "diff-review"
+        lenses_copy = dr_copy / "references" / "lenses"
         lenses_copy.mkdir(parents=True)
-        src_lenses = ska.DEFAULT_CODE_REVIEW_DIR / "references" / "lenses"
+        src_lenses = ska.DEFAULT_DIFF_REVIEW_DIR / "references" / "lenses"
         for src in src_lenses.glob("*.md"):
             (lenses_copy / src.name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
 
-        self.assertEqual(self.run_cli("--code-review-dir", str(cr_copy))[0], 0)
-        self.assertEqual(self.run_cli("--code-review-dir", str(cr_copy), "--check")[0], 0)
+        self.assertEqual(self.run_cli("--diff-review-dir", str(dr_copy))[0], 0)
+        self.assertEqual(self.run_cli("--diff-review-dir", str(dr_copy), "--check")[0], 0)
 
         # Updating a lens guide (including '{{' syntax like GitHub Actions '${{ secrets.TOKEN }}')
         # makes --check report stale (exit 1) and re-syncs cleanly without template errors
@@ -338,28 +356,51 @@ class SyncAndProvenanceTests(unittest.TestCase):
             "# Updated Testing Rubric\n\n- **Tier**: `flagship`\n- Guard `${{ secrets.API_KEY }}` in CI.\n",
             encoding="utf-8",
         )
-        code, out, _ = self.run_cli("--code-review-dir", str(cr_copy), "--check")
+        code, out, _ = self.run_cli("--diff-review-dir", str(dr_copy), "--check")
         self.assertEqual(code, 1)
-        self.assertIn("stale   " + str(self.out_dir / "review-testing.md"), out)
+        self.assertIn("stale   " + str(self.out_dir / "diff-review-testing.md"), out)
 
-        self.assertEqual(self.run_cli("--code-review-dir", str(cr_copy))[0], 0)
+        self.assertEqual(self.run_cli("--diff-review-dir", str(dr_copy))[0], 0)
         self.assertIn(
             "${{ secrets.API_KEY }}",
-            (self.out_dir / "review-testing.md").read_text(encoding="utf-8"),
+            (self.out_dir / "diff-review-testing.md").read_text(encoding="utf-8"),
         )
 
         # A lens file missing a valid '- **Tier**: `(flagship|fast/balanced)`' line fails loud
         (lenses_copy / "broken.md").write_text("# Broken Lens Without Tier\n", encoding="utf-8")
-        code_bad_tier, _, err_bad_tier = self.run_cli("--code-review-dir", str(cr_copy), "--check")
+        code_bad_tier, _, err_bad_tier = self.run_cli("--diff-review-dir", str(dr_copy), "--check")
         self.assertEqual(code_bad_tier, 1)
         self.assertIn("missing '- **Tier**:", err_bad_tier)
 
         # Empty lenses directory fails loud
         for p in lenses_copy.glob("*.md"):
             p.unlink()
-        code_empty, _, err_empty = self.run_cli("--code-review-dir", str(cr_copy), "--check")
+        code_empty, _, err_empty = self.run_cli("--diff-review-dir", str(dr_copy), "--check")
         self.assertEqual(code_empty, 1)
         self.assertIn("no lens guide (.md) files found", err_empty)
+
+    def test_plan_review_lens_drift_and_sync(self) -> None:
+        pr_copy = self.tmp_path / "plan-review"
+        lenses_copy = pr_copy / "references" / "lenses"
+        lenses_copy.mkdir(parents=True)
+        src_lenses = ska.DEFAULT_PLAN_REVIEW_DIR / "references" / "lenses"
+        for src in src_lenses.glob("*.md"):
+            (lenses_copy / src.name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+
+        self.assertEqual(self.run_cli("--plan-review-dir", str(pr_copy))[0], 0)
+        (lenses_copy / "risk.md").write_text(
+            "# Updated Risk Lens\n\n- **Tier**: `flagship`\n- Check rollback.\n",
+            encoding="utf-8",
+        )
+        code, out, _ = self.run_cli("--plan-review-dir", str(pr_copy), "--check")
+        self.assertEqual(code, 1)
+        self.assertIn("stale   " + str(self.out_dir / "plan-review-risk.md"), out)
+
+        self.assertEqual(self.run_cli("--plan-review-dir", str(pr_copy))[0], 0)
+        self.assertIn(
+            "Check rollback.",
+            (self.out_dir / "plan-review-risk.md").read_text(encoding="utf-8"),
+        )
 
     def test_out_dir_symlink_is_refused(self) -> None:
         real_dir = self.tmp_path / "real-agents"

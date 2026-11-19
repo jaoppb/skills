@@ -26,11 +26,12 @@ This repository (`jaoppb/skills`) is a curated collection of agent skills adheri
 ```
 
 Existing skills in this repo:
-- [`code-review`](./skills/code-review/SKILL.md): Multi-lens, read-only branch/PR review with mandatory `code-quality` structural baseline, 11 conditional specialist lenses, open external agent discovery, and smart delta re-runs. Uses `references/lenses/`.
 - [`codebase-audit`](./skills/codebase-audit/SKILL.md): Whole-repo audit fanned out to subagents, producing a prioritized issue-ready report. Uses `references/` and `scripts/`.
+- [`diff-review`](./skills/diff-review/SKILL.md): Multi-lens, read-only branch/PR/working-tree diff review with content-aware baseline (`code-quality` and/or `docs-quality`), 11 conditional specialist lenses, open external agent discovery, and smart delta re-runs. Uses `references/lenses/`.
 - [`grill-me`](./skills/grill-me/SKILL.md): Interrogates a spec, plan, or design one question at a time and writes the decisions back.
 - [`herdr`](./skills/herdr/SKILL.md): Standalone control of Herdr terminal multiplexer via CLI.
-- [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md): Coordinator and worker agent patterns across Herdr worktrees with multi-lens `code-review` loops and per-host protocols. Uses modular guides in `references/`, `references/protocols/`, and `references/kiro-agents/`, plus `scripts/sync_kiro_agents.py`.
+- [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md): Coordinator and worker agent patterns across Herdr worktrees with multi-lens `diff-review` loops, optional pre-wave `plan-review`, and per-host protocols. Uses modular guides in `references/`, `references/protocols/`, and `references/kiro-agents/`, plus `scripts/sync_kiro_agents.py`.
+- [`plan-review`](./skills/plan-review/SKILL.md): Multi-lens, read-only pre-implementation review of issue breakdowns, refinement tickets, epics, implementation plans, and RFCs/ADRs with mandatory `plan-quality` baseline, 4 conditional specialist lenses, open external agent discovery, and revision-snapshot delta re-runs. Uses `references/lenses/`.
 - [`spdd-bootstrap`](./skills/spdd-bootstrap/SKILL.md): Generates project-tailored SPDD skills (analysis, REASONS canvas, generate, prompt-update, and sync when canvases are committed) from templates in `references/templates/`, rendered by `scripts/render.py`.
 
 ---

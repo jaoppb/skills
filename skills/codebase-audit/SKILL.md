@@ -1,6 +1,6 @@
 ---
 name: codebase-audit
-description: "Audit an entire repository for code smells, architecture and design problems, language/framework/library misuse, and gaps in engineering practice (tests, error handling, security, dependencies, CI, docs), fanning the work out to subagents and producing a prioritized report whose findings are ready to become issues. Use when the user asks to audit, assess, health-check or find what is wrong with a whole codebase, map technical debt, find refactoring candidates, or get a list of improvements to file as issues. Do not use for reviewing a single diff or PR, for a strict review of a branch change (use code-review), or to fix code; the audit is read-only."
+description: "Audit an entire repository for code smells, architecture and design problems, language/framework/library misuse, and gaps in engineering practice (tests, error handling, security, dependencies, CI, docs), fanning the work out to subagents and producing a prioritized report whose findings are ready to become issues. Use when the user asks to audit, assess, health-check or find what is wrong with a whole codebase, map technical debt, find refactoring candidates, or get a list of improvements to file as issues. Do not use for reviewing a single diff or PR, for a strict review of a branch change (use diff-review), for reviewing issue breakdowns or plans (use plan-review), or to fix code; the audit is read-only."
 ---
 
 # Codebase Audit

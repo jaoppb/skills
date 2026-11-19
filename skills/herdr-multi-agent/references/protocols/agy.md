@@ -18,7 +18,7 @@ herdr agent start <name> --kind agy --pane <pane-id> -- --model <model-id>
 ## 3. Skill Invocation
 
 - Slash commands (`/grill-me`, etc.) are user-facing chat shortcuts in Antigravity — the agent cannot execute slash commands directly.
-- Always load agent-invoked skills (`grill-me`, `code-review`, `herdr`) by reading their `SKILL.md` file directly with `read_file` and executing the workflow inline.
+- Always load agent-invoked skills (`grill-me`, `diff-review`, `plan-review`, `herdr`) by reading their `SKILL.md` file directly with `read_file` and executing the workflow inline.
 
 ## 4. Asking the Person (`ask_question` Only)
 
@@ -26,21 +26,23 @@ herdr agent start <name> --kind agy --pane <pane-id> -- --model <model-id>
 - **Never ask the person a question in plain prose** (this overrides standalone `grill-me`'s open-ended prose fallback inside Herdr panes; see [../grilling.md](../grilling.md)). For open-ended questions, still call `ask_question` and rely on the UI's built-in free-text **Other** input so Herdr reliably transitions `agent_status` to `blocked` and rejects incoming `herdr agent prompt` calls while waiting on the person.
 - Do **not** emit `[WAITING-FOR-PERSON]` under `agy` (reserved for non-blocking hosts in [fallback.md](fallback.md)).
 
-## 5. Read-Only Review Dispatch (`code-review`)
+## 5. Read-Only Review Dispatch (`diff-review` & `plan-review`)
 
-Follow [../review.md](../review.md) and the installed `code-review` skill ([code-review/SKILL.md](../../../code-review/SKILL.md)):
+Follow [../review.md](../review.md) and the installed `diff-review` ([diff-review/SKILL.md](../../../diff-review/SKILL.md)) or `plan-review` ([plan-review/SKILL.md](../../../plan-review/SKILL.md)) skill:
 
-1. **Write diff artifacts first (worktree gitfile rule)**: In Herdr git worktrees, `.git` is a gitfile pointing outside the worktree root, so sandboxed read-only sub-agents cannot run `git`. Before each round, write `/tmp/diff-<task>-r<n>.patch`, `/tmp/files-<task>-r<n>.txt`, and (on Round N+1) `/tmp/delta-<task>-r<n>.patch` (or write them under the conversation `scratch/` directory) per [../review.md](../review.md), readable via `read_file`.
+1. **Write `/tmp` artifacts first**:
+   - **`diff-review` (worktree gitfile rule)**: In Herdr git worktrees, `.git` is a gitfile pointing outside the worktree root, so sandboxed read-only sub-agents cannot run `git`. Before each round, write `/tmp/diff-<task>-r<n>.patch`, `/tmp/files-<task>-r<n>.txt`, and (on Round N+1) `/tmp/delta-<task>-r<n>.patch` (or write them under the conversation `scratch/` directory) per [../review.md](../review.md), readable via `read_file`.
+   - **`plan-review`**: Pre-fetch any remote tracker issues and write `/tmp/plan-<slug>-r<n>.md` (and on Round N+1 `/tmp/plan-delta-<slug>-r<n>.diff`) per [../review.md](../review.md) so read-only sub-agents need only `/tmp` + repository read access.
 2. **Define a read-only sub-agent**: Define once per conversation with write and command tools disabled:
    ```text
    define_subagent(
-     Name: "code-reviewer",
-     Description: "Read-only single-lens code-review specialist",
-     SystemPrompt: "You are a read-only code reviewer. Read the assigned lens guide, diff/file artifacts, task context, and workspace files. Report findings mapped to blocker, material, nitpick, or out-of-scope. Edit nothing and run no mutating commands.",
+     Name: "specialist-reviewer",
+     Description: "Read-only single-lens diff-review or plan-review specialist",
+     SystemPrompt: "You are a read-only specialist reviewer. Read the assigned lens guide, pre-written /tmp diff or plan artifacts, task/spec context, and workspace files. Report findings mapped to blocker, material, nitpick, or out-of-scope. Edit nothing and run no mutating commands.",
      EnableWriteTools: false
    )
    ```
-3. **One fresh `invoke_subagent` per active lens per round**: Launch one new sub-agent per active lens in parallel with the canonical reviewer brief from [../review.md](../review.md) (never reuse a prior round's `conversationId`, and never combine lenses). Map each lens's tier ([code-review/SKILL.md](../../../code-review/SKILL.md) §2/§4) to `invoke_subagent`'s `Model` enum:
+3. **One fresh `invoke_subagent` per active lens per round**: Launch one new sub-agent per active lens in parallel with the canonical reviewer brief from [../review.md](../review.md) (never reuse a prior round's `conversationId`, and never combine lenses). Map each lens's tier ([diff-review/SKILL.md](../../../diff-review/SKILL.md) §2/§4 or [plan-review/SKILL.md](../../../plan-review/SKILL.md) §2/§4) to `invoke_subagent`'s `Model` enum:
    - `flagship` → `Model: "pro"`
    - `fast/balanced` → `Model: "flash"`
 4. **Reactive wakeup**: Stop calling tools after launching the round's sub-agents; Antigravity resumes automatically as each sub-agent replies (do not poll).

@@ -2,7 +2,7 @@
 
 - **Role**: Developer Experience (DX) & Contracts Engineer — public API/CLI/schema contracts, error messages, and documentation sync.
 - **Tier**: `fast/balanced`
-- **Activation Trigger**: Diff modifies public HTTP/RPC/GraphQL endpoints, CLI flags/commands, SDK exports, request/response/config schemas, error formats, `README.md`, `AGENTS.md`, or migration/changelog docs. Stay off for purely internal implementation changes.
+- **Activation Trigger**: Diff modifies public HTTP/RPC/GraphQL endpoints, CLI flags/commands, SDK exports, request/response/config schemas, error formats, or code-to-docs contract sync (`README.md`, `AGENTS.md`, or migration/changelog docs describing public interfaces). Stay off for purely internal implementation changes or pure prose/editorial docs with no public API/CLI/schema contract surface (handled by `docs-quality`).
 - **Delta Re-run Invalidation**:
   - Public API routes/controllers, OpenAPI/GraphQL/Protobuf schemas, CLI parsers, exported package entrypoints
   - `README.md`, `AGENTS.md`, `docs/**`, `CHANGELOG*`, migration guides

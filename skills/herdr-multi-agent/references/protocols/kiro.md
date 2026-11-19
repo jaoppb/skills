@@ -25,14 +25,14 @@ Resolve exact available Claude model slugs on the host using:
 python3 <skill-dir>/scripts/sync_kiro_agents.py --print-models
 ```
 
-This queries `kiro-cli chat --list-models --format json` and picks the highest semantic `claude-opus-*` and `claude-sonnet-*` slugs (preferring canonical non-dated slugs over 8-digit dated snapshots). Look up the role's tier in [../agent-effort.md](../agent-effort.md) (default Preset 3: Coordinator = Middle `<sonnet-id>`, Worker = Top `<opus-id>`, both at `medium` effort) and pass `--agent`, `--model`, and `--effort` after `--`:
+This queries `kiro-cli chat --list-models --format json` and picks the highest semantic `claude-opus-*` and `claude-sonnet-*` slugs (preferring canonical non-dated slugs over 8-digit dated snapshots). Look up the role's tier in [../agent-effort.md](../agent-effort.md) (default Preset 3: Coordinator = Middle `<sonnet-id>`, Worker = Top `<opus-id>`, both at `medium` effort) and pass `chat`, `--agent`, `--model`, and `--effort` after `--`:
 
 ```bash
 # Coordinator (when launched via herdr agent start)
-herdr agent start <name> --kind kiro --pane <pane-id> -- --agent herdr-coordinator --model <model-id> --effort medium
+herdr agent start <name> --kind kiro --pane <pane-id> -- chat --agent herdr-coordinator --model <model-id> --effort medium
 
 # Worker
-herdr agent start <name> --kind kiro --pane <pane-id> -- --agent herdr-worker --model <model-id> --effort medium
+herdr agent start <name> --kind kiro --pane <pane-id> -- chat --agent herdr-worker --model <model-id> --effort medium
 ```
 
 ## 3. Session Identity
@@ -63,5 +63,5 @@ Follow [../review.md](../review.md) and the installed `diff-review` ([diff-revie
      - `flagship` → `<opus-id>` (`diff-review`: `code-quality`, `docs-quality`, `testing`, `security`, `data`, `performance`; `plan-review`: `plan-quality`, `feasibility`, `slicing-and-dependencies`, `risk`)
      - `fast/balanced` → `<sonnet-id>` (`diff-review`: `devops`, `observability`, `frontend`, `seo`, `product-owner`, `product-manager`, `api-docs`; `plan-review`: `product-alignment`)
 4. **Fallback CLI review tabs**: If Kiro's native `subagent` tool is unavailable (or an external specialist lacks a read-only Kiro profile), run temporary Herdr review tabs per [fallback.md](fallback.md) §4, starting each reviewer with `--kind kiro` and explicit two-tier flags after `--` (include `--agent diff-review-<lens>` or `--agent plan-review-<lens>` for built-in lenses, and omit `--agent` when running an external specialist lacking a read-only Kiro profile, relying on [fallback.md](fallback.md) §4 step 5's worktree-cleanliness check):
-   - `flagship` → `-- [--agent <prefix>-<lens>] --model <opus-id> --effort medium`
-   - `fast/balanced` → `-- [--agent <prefix>-<lens>] --model <sonnet-id> --effort high`
+   - `flagship` → `-- chat [--agent <prefix>-<lens>] --model <opus-id> --effort medium`
+   - `fast/balanced` → `-- chat [--agent <prefix>-<lens>] --model <sonnet-id> --effort high`

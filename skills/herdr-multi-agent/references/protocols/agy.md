@@ -4,11 +4,13 @@ Host-specific mechanics for coordinators and workers running under `--kind agy` 
 
 ## 1. Startup & Model Flags
 
-Look up `<model-id>` for the role (or CLI reviewer tier) in [../agent-effort.md](../agent-effort.md). Antigravity encodes effort inside `<model-id>` (inspect available IDs with `agy models`), so pass `--model` after `--` with **no** `--effort` flag:
+Look up `<model-id>` for the role (or CLI reviewer tier) in [../agent-effort.md](../agent-effort.md). Antigravity's `agy models` catalog encodes effort inside `<model-id>` (for example `gemini-4-neon-high` for Top, `gemini-4-argon-medium` for Middle, and `gemini-4-hydrogen-medium` for Fast — inspect live IDs with `agy models`), so pass `--model` alone after `--`:
 
 ```bash
 herdr agent start <name> --kind agy --pane <pane-id> -- --model <model-id>
 ```
+
+`agy` also exposes an optional `--effort` flag (`low|medium|high|xhigh|max`); omit it for standard preset starts and use it only when explicitly overriding the effort suffix on a run.
 
 ## 2. Session Identity
 

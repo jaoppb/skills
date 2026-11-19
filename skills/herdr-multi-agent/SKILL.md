@@ -36,7 +36,7 @@ Lessons from running a coordinator agent and several worker agents, one per task
 |------|---------|
 | [references/protocols/claude.md](references/protocols/claude.md) | `--kind claude` startup flags, `/grill-me`, `/diff-review`, & `/plan-review`, blocking `AskUserQuestion`, and `Agent` review dispatch |
 | [references/protocols/agy.md](references/protocols/agy.md) | `--kind agy` startup flags, `SKILL.md` loading, blocking `ask_question`, `/tmp` artifact prep, and `invoke_subagent` review dispatch |
-| [references/protocols/kiro.md](references/protocols/kiro.md) | `--kind kiro` preflight `~/.kiro/agents/` sync, `--agent`/`--model`/`--effort` startup flags, `[WAITING-FOR-PERSON]` sentinel, and `subagent` review dispatch |
+| [references/protocols/kiro.md](references/protocols/kiro.md) | `--kind kiro` preflight `~/.kiro/agents/` sync, `chat` + `--agent`/`--model`/`--effort` startup flags, `[WAITING-FOR-PERSON]` sentinel, and `subagent` review dispatch |
 | [references/protocols/fallback.md](references/protocols/fallback.md) | All other `--kind` agents: bare startup, `[WAITING-FOR-PERSON]` sentinel, and temporary Herdr review-tab dispatch |
 | [scripts/sync_kiro_agents.py](scripts/sync_kiro_agents.py) | Idempotent `~/.kiro/agents/` sync and `--check` preflight rendering `herdr-*`, read-only `diff-review-*`, and read-only `plan-review-*` profiles from [references/kiro-agents/](references/kiro-agents/) |
 | [references/waves.md](references/waves.md) | Planning waves, overlap prediction, `lenses: [<baseline>, ...]`, optional pre-wave `plan-review`, go messages, re-checking with real diffs |

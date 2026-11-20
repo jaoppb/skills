@@ -9,9 +9,7 @@
 
 **Scope guardrail**: Never invent unrequested future-phase features beyond the parent spec, epic, or confirmed `grill-me` decisions. Judge strictly against delivering the agreed user value cleanly and completely.
 
----
-
-## Primary Review Questions
+## Check
 
 - **Parent spec & grill fidelity**: Does the breakdown faithfully capture every confirmed decision and requirement from the parent epic/spec/`grill-me` output without silent omissions or compromises?
 - **Non-goals & MVP discipline**: Did any ticket sneak in unrequested scope, speculative settings, or gold-plating that violates explicit non-goals?
@@ -19,12 +17,7 @@
 - **User-visible edge cases**: Are the edge cases implied by the user story (empty state, invalid input, permission denied, cancellation, error recovery) accounted for in the acceptance criteria?
 - **Rollout & measurement readiness**: If the parent spec calls for feature flags, gradual rollout, or telemetry/success metrics, are those explicitly scheduled rather than forgotten?
 
----
-
-## Severity Mapping
+## Presumptive Blockers
 
 - **`blocker` (P0)**: Drops a core requirement from the parent spec, contradicts a confirmed `grill-me` decision, or leaves an end-to-end user flow with a dead end.
 - **`material` (P1)**: Partial requirement gap, missing user-visible edge case in acceptance criteria, missing agreed rollout/telemetry step, or clear scope creep violating an explicit non-goal.
-- **`nitpick` (P2/P3)**: Minor copy/wording alignment or non-blocking UX polish note.
-
-Approve only with **zero `blocker` and zero `material` findings**.

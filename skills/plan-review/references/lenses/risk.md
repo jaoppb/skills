@@ -7,9 +7,7 @@
   - Any revision touching auth, trust boundaries, data models/migrations, compatibility/deprecation, rollout/rollback, concurrency, or error handling
   - *Conservative fallback*: re-run whenever uncertain whether a revision changes blast radius or failure behavior.
 
----
-
-## Primary Review Questions
+## Check
 
 - **Trust boundaries & security**: Does the plan clearly specify authn/authz enforcement points, input validation, least-privilege permissions, and secret/PII handling before implementation?
 - **Data & migration safety**: Are schema changes backward-compatible across rolling deploys (expand/contract)? Is backfill, idempotency, lock contention, or data-loss prevention planned?
@@ -17,12 +15,7 @@
 - **Failure modes & recovery**: What happens on partial failure, timeout, duplicate delivery, concurrent writers, offline/empty state, or crash mid-operation? Are retries/idempotency/atomicity designed in?
 - **Rollout, observability & rollback**: If the change has high blast radius, is there a safe rollout sequence (flags, canary, dry-run), minimum observability to tell if it's healthy, and a clean rollback path?
 
----
-
-## Severity Mapping
+## Presumptive Blockers
 
 - **`blocker` (P0)**: Planned design introduces a clear security vulnerability, irreversible data-loss/destructive migration hazard, unrecoverable partial-state corruption, or silent breaking change to production callers with no migration plan.
 - **`material` (P1)**: Unspecified auth/validation boundary, missing rollback/cutover strategy for a risky change, unhandled concurrency/idempotency failure mode, or missing observability for a critical new path.
-- **`nitpick` (P2/P3)**: Hardening suggestion or defense-in-depth note that is helpful but non-blocking for this iteration.
-
-Approve only with **zero `blocker` and zero `material` findings**.

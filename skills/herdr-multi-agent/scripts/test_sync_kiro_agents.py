@@ -217,9 +217,9 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertEqual(len(diff_lenses), 13)
         self.assertEqual(len(plan_lenses), 5)
 
-        for prefix, lenses, artifact_hint in (
-            ("diff-review", diff_lenses, "/tmp/diff-<task>-r<n>.patch"),
-            ("plan-review", plan_lenses, "/tmp/plan-<slug>-r<n>.md"),
+        for prefix, lenses, artifact_hint, skill_dir in (
+            ("diff-review", diff_lenses, "/tmp/diff-<task>-r<n>.patch", ska.DEFAULT_DIFF_REVIEW_DIR),
+            ("plan-review", plan_lenses, "/tmp/plan-<slug>-r<n>.md", ska.DEFAULT_PLAN_REVIEW_DIR),
         ):
             for lens_name, (tier, lens_src) in lenses.items():
                 path = self.out_dir / f"{prefix}-{lens_name}.md"
@@ -239,7 +239,10 @@ class SyncAndProvenanceTests(unittest.TestCase):
 
                 self.assertIn(artifact_hint, body)
                 self.assertIn(lens_src, body)
-                self.assertIn("Edit nothing and mutate nothing.", body)
+                contract_src = (skill_dir / "references" / "reviewer-contract.md").read_text(encoding="utf-8").strip()
+                self.assertIn(contract_src, body)
+                self.assertIn("Edit nothing", body)
+                self.assertNotIn("{{CONTRACT}}", body)
 
     def test_idempotent_rerun_and_drift_detection_for_model_or_lens_changes(self) -> None:
         self.assertEqual(self.run_cli()[0], 0)
@@ -346,6 +349,11 @@ class SyncAndProvenanceTests(unittest.TestCase):
         src_lenses = ska.DEFAULT_DIFF_REVIEW_DIR / "references" / "lenses"
         for src in src_lenses.glob("*.md"):
             (lenses_copy / src.name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        contract_copy = dr_copy / "references" / "reviewer-contract.md"
+        contract_copy.write_text(
+            (ska.DEFAULT_DIFF_REVIEW_DIR / "references" / "reviewer-contract.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
 
         self.assertEqual(self.run_cli("--diff-review-dir", str(dr_copy))[0], 0)
         self.assertEqual(self.run_cli("--diff-review-dir", str(dr_copy), "--check")[0], 0)
@@ -365,6 +373,24 @@ class SyncAndProvenanceTests(unittest.TestCase):
             "${{ secrets.API_KEY }}",
             (self.out_dir / "diff-review-testing.md").read_text(encoding="utf-8"),
         )
+
+        # Editing the shared reviewer contract makes every diff-review lens profile stale
+        contract_copy.write_text("# Reviewer Contract\n\n- Updated terse output rule.\n", encoding="utf-8")
+        code, out, _ = self.run_cli("--diff-review-dir", str(dr_copy), "--check")
+        self.assertEqual(code, 1)
+        self.assertIn("stale   " + str(self.out_dir / "diff-review-code-quality.md"), out)
+        self.assertEqual(self.run_cli("--diff-review-dir", str(dr_copy))[0], 0)
+        self.assertIn(
+            "Updated terse output rule.",
+            (self.out_dir / "diff-review-security.md").read_text(encoding="utf-8"),
+        )
+
+        # A missing reviewer contract fails loud
+        contract_copy.unlink()
+        code_no_contract, _, err_no_contract = self.run_cli("--diff-review-dir", str(dr_copy), "--check")
+        self.assertEqual(code_no_contract, 1)
+        self.assertIn("reviewer contract not found", err_no_contract)
+        contract_copy.write_text("# Reviewer Contract\n", encoding="utf-8")
 
         # A lens file missing a valid '- **Tier**: `(flagship|fast/balanced)`' line fails loud
         (lenses_copy / "broken.md").write_text("# Broken Lens Without Tier\n", encoding="utf-8")
@@ -386,6 +412,10 @@ class SyncAndProvenanceTests(unittest.TestCase):
         src_lenses = ska.DEFAULT_PLAN_REVIEW_DIR / "references" / "lenses"
         for src in src_lenses.glob("*.md"):
             (lenses_copy / src.name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        (pr_copy / "references" / "reviewer-contract.md").write_text(
+            (ska.DEFAULT_PLAN_REVIEW_DIR / "references" / "reviewer-contract.md").read_text(encoding="utf-8"),
+            encoding="utf-8",
+        )
 
         self.assertEqual(self.run_cli("--plan-review-dir", str(pr_copy))[0], 0)
         (lenses_copy / "risk.md").write_text(

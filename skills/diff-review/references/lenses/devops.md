@@ -8,9 +8,7 @@
   - `.env*`, `Makefile`, `justfile`, release/deploy scripts, healthcheck endpoints
   - *Conservative fallback*: re-run whenever uncertain whether a fix affects build, runtime config, or deployability.
 
----
-
-## Primary Review Questions
+## Check
 
 - **CI/CD & build determinism**: Are workflow actions/images pinned? Are secrets scoped to minimum permissions (`permissions:` in GitHub Actions)? Do checks fail loud rather than swallowing errors (`set -e` / `|| true`)?
 - **Containers & IaC**: Non-root user in containers, multi-stage builds, `.dockerignore` hygiene, resource limits, and no baked-in secrets?
@@ -18,12 +16,7 @@
 - **Healthchecks**: Do readiness/liveness probes accurately reflect critical dependencies without causing cascading restarts?
 - **Rollback safety**: Can this change be rolled back cleanly without manual intervention or broken state?
 
----
-
-## Severity Mapping
+## Presumptive Blockers
 
 - **`blocker` (P0)**: Broken CI/deploy pipeline, baked-in secrets, overly permissive CI token/IAM grants, or silent error swallowing in critical release steps.
 - **`material` (P1)**: Unvalidated required env vars causing cryptic runtime crashes, missing healthcheck/rollback consideration on infra changes, or unpinned risky build actions.
-- **`nitpick` (P2/P3)**: Caching optimizations, minor Dockerfile layer ordering, or log formatting polish.
-
-Approve only with **zero `blocker` and zero `material` findings**.

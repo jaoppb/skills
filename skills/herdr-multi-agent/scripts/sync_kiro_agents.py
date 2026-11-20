@@ -12,8 +12,9 @@ Usage:
 
 Renders and installs the namespaced Kiro custom agent profiles managed by
 herdr-multi-agent (`herdr-coordinator.md`, `herdr-worker.md`, read-only
-`diff-review-<lens>.md` wrappers embedding `diff-review/references/lenses/<lens>.md`,
-and read-only `plan-review-<lens>.md` wrappers embedding
+`diff-review-<lens>.md` wrappers embedding `diff-review/references/reviewer-contract.md`
+and `diff-review/references/lenses/<lens>.md`, and read-only `plan-review-<lens>.md`
+wrappers embedding `plan-review/references/reviewer-contract.md` and
 `plan-review/references/lenses/<lens>.md`) into `~/.kiro/agents/` without
 touching task git worktrees or non-namespaced user agents.
 
@@ -283,6 +284,20 @@ def load_review_lenses(skill_dir: Path, *, skill_name: str, cli_flag: str) -> di
     return lenses
 
 
+def load_reviewer_contract(skill_dir: Path, *, skill_name: str, cli_flag: str) -> str:
+    """Load the shared <skill-dir>/references/reviewer-contract.md embedded in every lens profile."""
+    contract_path = skill_dir / "references" / "reviewer-contract.md"
+    if not contract_path.is_file():
+        raise SyncError(
+            f"companion {skill_name} reviewer contract not found at '{contract_path}' "
+            f"(install '{skill_name}' alongside 'herdr-multi-agent' or pass {cli_flag})"
+        )
+    try:
+        return contract_path.read_text(encoding="utf-8").strip()
+    except OSError as err:
+        raise SyncError(f"cannot read reviewer contract '{contract_path}': {err}") from err
+
+
 def render_with_provenance(template: str, values: dict[str, str]) -> str:
     stripped_template = PLACEHOLDER_RE.sub("", template)
     if "{{" in stripped_template or "}}" in stripped_template:
@@ -339,15 +354,22 @@ def build_expected_profiles(
         plan_review_dir, skill_name="plan-review", cli_flag="--plan-review-dir"
     )
 
+    diff_contract = load_reviewer_contract(
+        diff_review_dir, skill_name="diff-review", cli_flag="--diff-review-dir"
+    )
+    plan_contract = load_reviewer_contract(
+        plan_review_dir, skill_name="plan-review", cli_flag="--plan-review-dir"
+    )
+
     common = {"OPUS_MODEL": opus_model, "SONNET_MODEL": sonnet_model}
     profiles: dict[str, str] = {
         "herdr-coordinator.md": render_with_provenance(coord_tpl, common),
         "herdr-worker.md": render_with_provenance(worker_tpl, common),
     }
 
-    for prefix, template, lenses in (
-        ("diff-review", diff_lens_template, diff_lenses),
-        ("plan-review", plan_lens_template, plan_lenses),
+    for prefix, template, lenses, contract in (
+        ("diff-review", diff_lens_template, diff_lenses, diff_contract),
+        ("plan-review", plan_lens_template, plan_lenses, plan_contract),
     ):
         for lens_name, (tier, lens_body) in sorted(lenses.items()):
             agent_name = f"{prefix}-{lens_name}"
@@ -359,6 +381,7 @@ def build_expected_profiles(
                     "LENS_NAME": lens_name,
                     "TIER": tier,
                     "MODEL": model,
+                    "CONTRACT": contract,
                     "LENS_BODY": lens_body,
                 },
             )

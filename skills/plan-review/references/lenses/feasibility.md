@@ -9,9 +9,7 @@
 
 **Core rule**: Never trust the plan's description of the codebase — **read the actual files in the workspace** to verify every claim.
 
----
-
-## Primary Review Questions
+## Check
 
 - **Path & symbol accuracy**: Do all files, modules, classes, functions, CLI flags, config keys, and tables named in the plan actually exist with the shapes and signatures assumed?
 - **Hidden callers & touchpoints**: Did the plan miss callers, consumers, generated files, test fixtures, CI scripts, or sibling docs that must change alongside the named targets?
@@ -19,12 +17,7 @@
 - **Architectural & constraint fit**: Does the proposed design respect the repo's actual module boundaries, runtime constraints (sandboxing, async model, bundling, strict types, lockfiles), and established conventions?
 - **Verification realism**: Do the plan's proposed test/check commands and verification steps actually work in this repository?
 
----
-
-## Severity Mapping
+## Presumptive Blockers
 
 - **`blocker` (P0)**: Plan relies on a nonexistent API/file/capability, violates a hard architectural or runtime constraint of the codebase, or makes an assumption that directly contradicts the real implementation and would derail execution.
 - **`material` (P1)**: Missed callers/touchpoints that change ticket scope or file overlap, reinventing an existing canonical utility, or unrealistic verification steps.
-- **`nitpick` (P2/P3)**: Minor filename/symbol typo or small suggestion to point an implementer at a helpful existing reference file.
-
-Approve only with **zero `blocker` and zero `material` findings**.

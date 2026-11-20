@@ -586,11 +586,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--opus-model",
-        help="explicit model slug override for flagship / Top tier (herdr-worker and deep review lenses)",
+        help="explicit model slug override for flagship / Top tier (flagship review lenses)",
     )
     parser.add_argument(
         "--sonnet-model",
-        help="explicit model slug override for Middle / Fast / advisory tier (herdr-coordinator and advisory lenses)",
+        help="explicit model slug override for Middle / Fast / advisory tier (herdr-coordinator, herdr-worker, and fast/balanced lenses)",
     )
     parser.add_argument(
         "--models-json",

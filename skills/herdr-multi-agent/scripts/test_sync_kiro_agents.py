@@ -203,7 +203,9 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertIn("\nmodel: claude-sonnet-4.6\n", coord)
         self.assertIn("  - subagent\n", coord)
         self.assertTrue(worker.startswith("---\nname: herdr-worker\n"))
-        self.assertIn("\nmodel: claude-opus-4.6\n", worker)
+        # Default Preset 2 runs workers on the Fast tier: the worker profile pins Sonnet, not Opus
+        self.assertIn("\nmodel: claude-sonnet-4.6\n", worker)
+        self.assertNotIn("\nmodel: claude-opus-4.6\n", worker)
         self.assertIn("  - subagent\n", worker)
 
         # Verify every diff-review-<lens>.md and plan-review-<lens>.md is structurally read-only,

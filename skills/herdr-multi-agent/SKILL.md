@@ -41,7 +41,7 @@ Lessons from running a coordinator agent and several worker agents, one per task
 | [scripts/sync_kiro_agents.py](scripts/sync_kiro_agents.py) | Idempotent `~/.kiro/agents/` sync and `--check` preflight rendering `herdr-*`, read-only `diff-review-*`, and read-only `plan-review-*` profiles from [references/kiro-agents/](references/kiro-agents/) |
 | [references/waves.md](references/waves.md) | Planning waves, overlap prediction, `lenses: [<baseline>, ...]`, optional pre-wave `plan-review`, go messages, re-checking with real diffs |
 | [references/grilling.md](references/grilling.md) | The grill every worker starts with |
-| [references/agent-effort.md](references/agent-effort.md) | Model tiers and selectable presets (Presets 1–4) for coordinators and workers |
+| [references/agent-effort.md](references/agent-effort.md) | Model tiers and selectable presets (Presets 1–4, default Preset 2; Top is opt-in) for coordinators and workers |
 | [references/topology.md](references/topology.md) | Creating worktrees and agents, protocol selection, names, startup failures |
 | [references/worker-prompts.md](references/worker-prompts.md) | Sending prompts, reading workers, first-prompt checklist |
 | [references/review.md](references/review.md) | Multi-lens `diff-review` worker loop (with smart delta re-runs) and optional coordinator pre-wave `plan-review` |

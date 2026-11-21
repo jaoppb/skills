@@ -30,7 +30,7 @@ Existing skills in this repo:
 - [`diff-review`](./skills/diff-review/SKILL.md): Multi-lens, read-only branch/PR/working-tree diff review with content-aware baseline (`code-quality` and/or `docs-quality`), 11 conditional specialist lenses, open external agent discovery, and smart delta re-runs. Uses `references/lenses/`.
 - [`grill-me`](./skills/grill-me/SKILL.md): Interrogates a spec, plan, or design one question at a time and writes the decisions back.
 - [`herdr`](./skills/herdr/SKILL.md): Standalone control of Herdr terminal multiplexer via CLI.
-- [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md): Coordinator and worker agent patterns across Herdr worktrees with multi-lens `diff-review` loops, optional pre-wave `plan-review`, and per-host protocols. Uses modular guides in `references/`, `references/protocols/`, and `references/kiro-agents/`, plus `scripts/sync_kiro_agents.py`.
+- [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md): Coordinator and worker agent patterns across Herdr worktrees with multi-lens `diff-review` loops, optional pre-run `plan-review`, and per-host protocols. Uses modular guides in `references/`, `references/protocols/`, and `references/kiro-agents/`, plus `scripts/sync_kiro_agents.py`.
 - [`plan-review`](./skills/plan-review/SKILL.md): Multi-lens, read-only pre-implementation review of issue breakdowns, refinement tickets, epics, implementation plans, and RFCs/ADRs with mandatory `plan-quality` baseline, 4 conditional specialist lenses, open external agent discovery, and revision-snapshot delta re-runs. Uses `references/lenses/`.
 - [`spdd-bootstrap`](./skills/spdd-bootstrap/SKILL.md): Generates project-tailored SPDD skills (analysis, REASONS canvas, generate, prompt-update, and sync when canvases are committed) from templates in `references/templates/`, rendered by `scripts/render.py`.
 
@@ -43,7 +43,7 @@ Every skill in this repository must follow these design principles:
 ### A. Progressive Disclosure
 - The root `SKILL.md` must be lean, clear, and scannable. It should introduce roles, core rules, and high-level workflows.
 - Offload deep implementation details, checklists, complex heuristics, or multi-step runbooks into modular markdown files under `references/`.
-- Cross-reference reference files using relative markdown links (e.g. `[references/waves.md](references/waves.md)`).
+- Cross-reference reference files using relative markdown links (e.g. `[references/dependency-graph.md](references/dependency-graph.md)`).
 
 ### B. Explicit Negative Bounds
 - The `description` field in the frontmatter must clearly state both **when to activate** and **when NOT to activate**.

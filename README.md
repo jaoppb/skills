@@ -67,7 +67,7 @@ npx skills add jaoppb/skills --skill spdd-bootstrap -g
 
 | Skill | Description & Primary Trigger | Structure |
 | :--- | :--- | :--- |
-| [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md) | Coordinates multiple agents in parallel across separate Git worktrees using [Herdr](https://herdr.dev). Enforces wave planning, optional pre-wave `plan-review`, mandatory initial grilling (`grill-me`), multi-lens `diff-review` loops, per-host protocols, and automated PR creation. | Root `SKILL.md` + 9 workflow runbooks under `references/` + 4 host protocols under `references/protocols/` + Kiro agent templates under `references/kiro-agents/` + `scripts/sync_kiro_agents.py`. |
+| [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md) | Coordinates multiple agents in parallel across separate Git worktrees using [Herdr](https://herdr.dev). Enforces dependency-graph planning, optional pre-run `plan-review`, mandatory initial grilling (`grill-me`), multi-lens `diff-review` loops, per-host protocols, and automated PR creation. | Root `SKILL.md` + 9 workflow runbooks under `references/` + 4 host protocols under `references/protocols/` + Kiro agent templates under `references/kiro-agents/` + `scripts/sync_kiro_agents.py`. |
 | [`herdr`](./skills/herdr/SKILL.md) | Inspects and controls panes, tabs, workspaces, and agents running under the Herdr workspace manager via the `herdr` CLI. | Standalone `SKILL.md`. |
 | [`grill-me`](./skills/grill-me/SKILL.md) | Interrogates a spec, plan, or design one hard question at a time to expose gaps and undecided trade-offs, then writes the decisions back. Used by every `herdr-multi-agent` worker at startup. | Standalone `SKILL.md`. |
 | [`diff-review`](./skills/diff-review/SKILL.md) | Multi-lens, read-only diff/branch/PR review with content-aware baseline (`code-quality` for code, `docs-quality` for docs-only, or both for mixed substantial docs), 11 conditional specialist lenses (`testing`, `security`, `data`, `devops`, `observability`, `frontend`, `seo`, `product-owner`, `product-manager`, `performance`, `api-docs`), open discovery of external specialists, and smart delta re-runs. | Root `SKILL.md` + shared `references/reviewer-contract.md` + 13 lens guides under `references/lenses/`. |
@@ -116,6 +116,7 @@ skills/
 │       ├── agent-effort.md
 │       ├── cleanup.md
 │       ├── coordinator-rules.md
+│       ├── dependency-graph.md
 │       ├── grilling.md
 │       ├── kiro-agents/
 │       │   ├── diff-review-lens.md
@@ -130,7 +131,6 @@ skills/
 │       ├── reporting-protocol.md
 │       ├── review.md
 │       ├── topology.md
-│       ├── waves.md
 │       └── worker-prompts.md
 ├── plan-review/
 │   ├── SKILL.md

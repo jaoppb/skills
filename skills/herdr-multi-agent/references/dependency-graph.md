@@ -1,0 +1,21 @@
+# Dependency graph
+
+The coordinator always builds the task dependency graph before it spawns agents or sends any go message. Never start every task at once and hope the branches do not collide.
+
+## Planning the dependency graph (before spawning)
+
+1. List the tasks and read each issue body, its declared dependencies and the code or doc areas it names (screens, wiring traits, error enums, design docs, the shared plan, migrations).
+2. Predict **file overlap**: two tasks that touch the same module, screen or document cannot implement concurrently. Use the issue text, `docs/design/` and a quick search of the code to find the likely files. When unsure, treat tasks of the same area as overlapping.
+3. Build a directed acyclic graph (DAG): add declared dependency edges first (`blocker -> blocked`), then orient each predicted file-overlap pair as a directed edge chosen at planning time (the task on the critical path or with more dependents goes first). Never add an overlap edge against an existing dependency path; if declared dependencies form a cycle, stop and resolve it with the person.
+4. Assign each task's review lenses as `lenses: [<baseline>, ...]` using the content-aware baseline, activation triggers, and discovered project/user specialist agents in the installed `diff-review` skill ([diff-review/SKILL.md](../../diff-review/SKILL.md)) — always list the mandatory baseline(s) explicitly so `lenses` is never empty (`code-quality` for code tasks, `docs-quality` for docs-only tasks, or both for mixed tasks with substantial docs changes, e.g. `lenses: [code-quality, testing, frontend]` or `lenses: [docs-quality]`). Update `lenses` after `[DONE-READ <task>]` when the grill changes expected files or scope, and retag + re-check graph overlap whenever a worker sends `[TREE <task>]` about a diff triggering an unassigned lens ([review.md](review.md)).
+5. **Optional pre-run `plan-review` gate**: When the person asks for a plan/breakdown review — or when the issue set or dependency graph looks under-refined, oversized, or high-risk — run `plan-review` ([plan-review/SKILL.md](../../plan-review/SKILL.md), see [review.md](review.md#optional-pre-run-plan-review-coordinator)) on the task breakdown and draft dependency graph before asking the person to confirm the plan.
+6. Show the dependency graph to the person (root tasks with no blockers, each blocked task's declared and overlap edges with why each overlap order was chosen, each task's `lenses: [...]`, plus any `plan-review` findings/outcome if run) and get it confirmed before the first go message.
+
+## Dispatching from the graph
+
+- Every worker starts with the grill (see [grilling.md](grilling.md)), whatever its blockers, because grilling is read-only. After the grill the worker reports `[DONE-READ <task>]` and waits for a go message.
+- Send the go message to a task as soon as its `[DONE-READ <task>]` arrives and all of its blockers (declared dependencies and overlap predecessors) are merged — do not hold an unblocked task waiting for unrelated tasks' grills or merges. The worker then rebases again and implements.
+- A task with any unmerged blocker does not write code. Give it the read-only step (rebase, compare the plan with the code, report mismatches) and tell it to wait for the go message.
+- A task that needs a written artifact before its code (a canvas, a design) waits for it: do not let a worker implement first.
+- **Re-check overlap on `[DONE-READ]` and real diffs.** The grill and the code can reveal files the prediction missed. Whenever `[DONE-READ <task>]` or `[TREE <task>]` uncovers a new file overlap, or before two concurrent branches both go to review (compare `git diff --name-only <base>..HEAD` on each, then `comm -12` of the sorted lists), add the directed overlap edge (or set merge order if both are already implementing — tell the follower to hold its push and send it a go message to rebase and resolve the conflicts, keeping both sides' intent and syncing the shared plan, once the leader merges) using the critical-path rule and notify the person. Pause to ask the person only when the order is ambiguous or changes a person-chosen priority.
+- Move planning cards by hand when the automatic sync would also move something that was held on purpose.

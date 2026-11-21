@@ -7,4 +7,5 @@ Every worker begins with a `grill-me` session with the person in its own pane (i
 - The grill ends with decisions, not code. The worker writes the sharpened decisions back only into the artifacts it owns, and only after the person confirms in that pane.
 - The worker then reports `[DONE-READ <task>]` with the decisions and any file it now expects to touch (the coordinator uses it to re-check the dependency graph and `lenses: [...]`, see [dependency-graph.md](dependency-graph.md)) and waits for the go message.
 - Decisions that need the person are asked in the worker's pane, never relayed through the coordinator.
-- Many workers grilling at once means many panes waiting on the person. That is expected; the coordinator tells the person which panes are waiting, and does not answer for them.
+- Blocked tasks are not grilled before their worker exists (no coordinator-run grills and no early idle workers — see [dependency-graph.md](dependency-graph.md)); a task's worker is spawned only once all its blockers are merged, and it grills first in its own pane.
+- Only currently unblocked tasks grill in parallel; when multiple unblocked tasks spawn together, the coordinator tells the person which panes are waiting, and does not answer for them.

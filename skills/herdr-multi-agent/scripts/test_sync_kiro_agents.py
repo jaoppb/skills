@@ -203,6 +203,7 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertIn("\nmodel: claude-sonnet-4.6\n", coord)
         self.assertIn("  - subagent\n", coord)
         self.assertIn("references/dependency-graph.md", coord)
+        self.assertIn("all its blockers", coord)
         self.assertNotIn("wave", coord.lower())
         self.assertTrue(worker.startswith("---\nname: herdr-worker\n"))
         # Default Preset 2 runs workers on the Fast tier: the worker profile pins Sonnet, not Opus

@@ -1,11 +1,11 @@
 ---
 name: plan-review
-description: "Run a multi-lens, read-only specialist review on pre-implementation artifacts: issue breakdowns, refinement tickets, epics, implementation plans, wave plans, or RFCs/ADRs. Always runs the mandatory `plan-quality` baseline (clarity, explicit non-goals, testable acceptance criteria, plan-judo simplification), activates up to 4 conditional specialist lenses (`feasibility`, `slicing-and-dependencies`, `risk`, `product-alignment`) plus discovered external specialist agents, and uses revision-snapshot delta re-runs via `/tmp` without mutating the artifact or requiring git commits. Use when critiquing drafted issues, refinements, epics, plans, or RFCs before implementation begins. Do not use for reviewing git diffs, branches, or pull requests (use diff-review), for interactive one-question-at-a-time spec interrogation with the user (use grill-me), or for whole-repository audits (use codebase-audit)."
+description: "Run a multi-lens, read-only specialist review on pre-implementation artifacts: issue breakdowns, refinement tickets, epics, implementation plans, dependency graphs, or RFCs/ADRs. Always runs the mandatory `plan-quality` baseline (clarity, explicit non-goals, testable acceptance criteria, plan-judo simplification), activates up to 4 conditional specialist lenses (`feasibility`, `slicing-and-dependencies`, `risk`, `product-alignment`) plus discovered external specialist agents, and uses revision-snapshot delta re-runs via `/tmp` without mutating the artifact or requiring git commits. Use when critiquing drafted issues, refinements, epics, plans, or RFCs before implementation begins. Do not use for reviewing git diffs, branches, or pull requests (use diff-review), for interactive one-question-at-a-time spec interrogation with the user (use grill-me), or for whole-repository audits (use codebase-audit)."
 ---
 
 # Plan Review
 
-Orchestrate a multi-lens, read-only specialist review of pre-implementation artifacts — issue breakdowns, refinement tickets, epics, implementation plans, wave plans, or RFCs/ADRs — before code is written.
+Orchestrate a multi-lens, read-only specialist review of pre-implementation artifacts — issue breakdowns, refinement tickets, epics, implementation plans, dependency graphs, or RFCs/ADRs — before code is written.
 
 The orchestrator fetches and snapshots the artifact into `/tmp` (or session scratch), selects lenses, dispatches fresh read-only sub-agents in parallel, tracks round state in a temporary ledger, escalates conflicts, and enforces the approval bar. **The orchestrator never reviews its own plan, never folds multiple lenses into one sub-agent, and never mutates the target artifact or tracker issues.**
 
@@ -19,7 +19,7 @@ plan-review/
     └── lenses/
         ├── plan-quality.md              # Mandatory baseline (flagship)
         ├── feasibility.md               # Codebase & architecture grounding (flagship)
-        ├── slicing-and-dependencies.md  # Multi-issue slicing, DAG & wave safety (fast/balanced)
+        ├── slicing-and-dependencies.md  # Multi-issue slicing, DAG & concurrency safety (fast/balanced)
         ├── risk.md                      # Security, data migration, rollback & failure modes (flagship)
         └── product-alignment.md         # Spec/grill fidelity, user edge cases & MVP scope (fast/balanced)
 ```
@@ -47,7 +47,7 @@ Always run `plan-quality`. Activate each conditional lens **only** when the arti
 | :--- | :--- | :--- | :--- |
 | `plan-quality` | `flagship` | **Always** (mandatory baseline in Round 1; conditional re-run per §6) | [plan-quality.md](references/lenses/plan-quality.md) |
 | `feasibility` | `flagship` | The plan or issue set targets an existing repository/codebase whose files, APIs, schemas, or tooling can be verified | [feasibility.md](references/lenses/feasibility.md) |
-| `slicing-and-dependencies` | `fast/balanced` | Multi-issue breakdown, epic decomposition, backlog refinement batch, or parallel wave plan (stay off for a single standalone RFC/ADR/ticket) | [slicing-and-dependencies.md](references/lenses/slicing-and-dependencies.md) |
+| `slicing-and-dependencies` | `fast/balanced` | Multi-issue breakdown, epic decomposition, backlog refinement batch, or task dependency graph (stay off for a single standalone RFC/ADR/ticket) | [slicing-and-dependencies.md](references/lenses/slicing-and-dependencies.md) |
 | `risk` | `flagship` | Plan touches auth/permissions, secrets, data migrations/schemas, external APIs, backward compatibility, rollout/feature flags, or concurrency/scale | [risk.md](references/lenses/risk.md) |
 | `product-alignment` | `fast/balanced` | Plan derives from a parent epic, product spec, or confirmed `grill-me` decisions, or changes user-facing flows/acceptance criteria | [product-alignment.md](references/lenses/product-alignment.md) |
 

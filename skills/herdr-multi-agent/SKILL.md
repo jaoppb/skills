@@ -1,6 +1,6 @@
 ---
 name: herdr-multi-agent
-description: "Coordinate several autonomous coding agents (Claude, Antigravity, Kiro, and others) through Herdr: one worktree and one agent per task, every agent starting with a grill-me session, a coordinator that always models tasks as a dependency graph with multi-lens diff-review tags (and optional pre-run plan-review), read-only review until approved before any merge, per-host protocols, and a tagged reporting protocol. Use only when the user asks to start, organize or coordinate multiple agents or worktrees with Herdr, alongside the herdr skill. Do not use for single-agent Herdr pane control (use herdr) or sub-agent delegation outside Herdr. Requires HERDR_ENV=1."
+description: "Coordinate several autonomous coding agents (Claude, Antigravity, Kiro, and others) through Herdr: one worktree and one agent per task, every agent starting with a grill-me session, a coordinator that always models tasks as a dependency graph with multi-lens diff-review tags (and optional pre-run plan-review), read-only review until approved before any merge, per-host protocols, and a tagged reporting protocol. Use only when the user asks to start, organize or coordinate multiple agents or worktrees with Herdr, alongside the herdr skill. Do not use for implementing a single issue or task in one session (use implement), single-agent Herdr pane control (use herdr) or sub-agent delegation outside Herdr. Requires HERDR_ENV=1."
 ---
 
 # Herdr multi-agent coordination

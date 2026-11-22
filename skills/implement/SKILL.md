@@ -1,6 +1,6 @@
 ---
 name: implement
-description: "Implement a single issue, spec, or task end-to-end in one agent session: intake and branch setup, mandatory grill-me interrogation, optional plan-review, implementation with checks and tests, multi-lens diff-review loop via fresh read-only sub-agents until zero blocker and zero material findings, and automated PR creation stopping before merge. Use when implementing a single GitHub issue, local spec/plan file, or coding task end-to-end in one session. Do not use for parallel multi-issue orchestration across Herdr worktrees (use herdr-multi-agent), standalone diff/PR reviews without implementing (use diff-review), standalone spec interrogation without implementing (use grill-me), pre-implementation plan/RFC reviews (use plan-review), whole-codebase audits (use codebase-audit), or read-only Q&A and debugging inquiries."
+description: "Implement a single issue, spec, or task end-to-end in one agent session: intake and branch setup, mandatory grill-me interrogation, optional plan-review, implementation with checks and tests, multi-lens diff-review loop via fresh read-only sub-agents until zero blocker and zero material findings, and automated PR creation stopping before merge. Use only when the user explicitly invokes implement or hands over a whole GitHub issue, local spec/plan file, or task to deliver end-to-end as a branch and PR. Do not use for ad-hoc in-session edits, refactors, or \"write this function\" requests, parallel multi-issue orchestration across Herdr worktrees (use herdr-multi-agent), standalone diff/PR reviews without implementing (use diff-review), standalone spec interrogation without implementing (use grill-me), pre-implementation plan/RFC reviews (use plan-review), whole-codebase audits (use codebase-audit), or read-only Q&A and debugging inquiries."
 ---
 
 # Implement
@@ -18,7 +18,8 @@ End-to-end single-session implementation workflow that preserves full engineerin
    - **Local spec or plan file**: read the target file completely along with any files it references.
    - **Pasted prompt / inline task**: capture the stated goal, constraints, and acceptance criteria from the conversation.
 2. **Read project context:** Read repository rules (`AGENTS.md`, `CLAUDE.md`, or equivalent), build/lint/test commands, and the existing code or docs the task touches.
-3. **Prepare a clean branch off the latest base branch:**
+3. **Resume an existing task workspace:** if the current branch or worktree already belongs to this task (named for it, or holding commits that reference it), reuse it instead of re-branching and resume at the first unmet gate: confirmed `grill-me` decisions present → skip §2; task commits present → go to §4 verification and §5. If ownership is ambiguous, ask.
+4. **Otherwise, prepare a clean branch off the latest base branch:**
    - Fetch and branch off the latest base branch (e.g., `origin/main` or the repo default) using a clean branch name such as `feat/<slug>` or `fix/<slug>`.
    - **Default:** create and switch to the new branch in the current checkout.
    - **Worktree fallback:** use a `git worktree` only if the user requests it or if the current checkout has unrelated uncommitted/in-progress work (ask before touching or bypassing dirty state; never discard or overwrite someone else's changes).
@@ -29,6 +30,7 @@ Run `grill-me` with the user before writing any code to sharpen scope, edge case
 
 - **Skip only when:** the target artifact already contains confirmed `grill-me` decisions (`Decisions` / `Non-goals`) that remain current, or the user explicitly waives grilling. Even then, stop and confirm if you uncover an unaddressed contradiction or blocker.
 - **Writeback (per `grill-me`):** write confirmed `Decisions`, `Non-goals`, `Open questions`, and `Risks` back in place to the GitHub issue or local spec file before coding, or output them in chat when working from a prompt only.
+- **Oversized input:** if grilling (or `plan-review`) shows the task holds multiple independent deliverables, stop and let the user choose: narrow to one slice for this PR (the rest becomes follow-up issues), hand off to `herdr-multi-agent`, or proceed as a single PR on explicit confirmation. Never ship a silent mega-PR.
 
 ### 3. Optional `plan-review` gate
 
@@ -40,16 +42,14 @@ Run `plan-review` before implementation **only** if the user requests it or if t
 2. Add or update tests that verify business intent and edge cases whenever behavior changes.
 3. Commit changes cleanly in logical units using the repository's commit style (including issue references such as `Refs #N` when applicable).
 4. Run the repository's check, lint, build, and test commands locally until green. Never report checks as passing if anything failed or was skipped.
+5. **No automated suite:** if the repository has no runnable checks, run the verification its rules document (e.g., an `AGENTS.md` checklist) plus cheap ad-hoc commands, and state plainly in the PR/handoff that no automated suite exists and what was verified manually. Never claim "checks green".
 
 ### 5. Mandatory multi-lens `diff-review` loop
 
-Run `diff-review` against the branch diff (`origin/<base>...HEAD`, or the working-tree/base diff when no remote base exists) **before** opening a PR or declaring done:
+Run `diff-review` against the branch diff (`origin/<base>...HEAD`, or the working-tree/base diff when no remote base exists) **before** opening a PR or declaring done, following its lens selection, dispatch, delta re-run, and escalation rules. Implement-specific seams:
 
-1. **Select active lenses per `diff-review`:** choose the content-aware mandatory baseline (`code-quality` for code/script/config diffs, `docs-quality` for docs-only diffs, or both for mixed diffs with substantial documentation changes), plus any triggered conditional specialist lenses and discovered external specialists.
-2. **Dispatch fresh read-only sub-agents:** launch one fresh read-only sub-agent per active lens in parallel. Never review your own diff and never fold multiple lenses into one sub-agent.
-3. **Fail loud without sub-agents:** if the host cannot spawn read-only sub-agents, **stop and report the gap** to the user per `diff-review` (do not fall back to single-pass self-review).
-4. **Worktree / sandboxed git prep:** if running inside a `git worktree` or sandbox where read-only sub-agents cannot execute `git`, pre-write the full diff, changed-file list, and round delta to temporary files (e.g., `/tmp` or session scratch) before each round, and keep the round ledger temporary (never commit it).
-5. **Smart delta re-runs until approved:** fix `blocker` (P0) and `material` (P1) findings in new commits, re-run project checks, and run `diff-review` delta rounds until **every active lens returns zero `blocker` and zero `material` findings** (nitpicks and out-of-scope items require written reject/defer reasons). Escalate to the user on lens conflicts or after 5 unapproved rounds.
+1. **Fail loud without sub-agents:** if the host cannot spawn read-only sub-agents, stop before the PR and report the gap per `diff-review` (no self-review fallback).
+2. **Fix in new commits:** address `blocker` and `material` findings in new commits, re-run §4 verification, then run the next `diff-review` delta round until approved.
 
 ### 6. PR & handoff
 
@@ -60,7 +60,7 @@ Run `diff-review` against the branch diff (`origin/<base>...HEAD`, or the workin
    - Local verification/check results observed after the final commit.
    - `diff-review` summary: approval round, active lenses, and per-lens fixed, rejected (with reason), and deferred (with reason) counts/items.
 3. **Stop before merge:** present the PR URL (or local branch) and approved HEAD commit SHA, and wait for the user to authorize merging. **Never merge automatically.**
-4. **On request only:** watch CI checks or clean up the finished branch/worktree after merge if the user asks. Any post-approval commit (rebase conflict fix, CI fix, or PR review change) invalidates prior approval and requires another `diff-review` delta round before re-reporting readiness.
+4. **On request only:** watch CI checks or clean up the finished branch/worktree after merge if the user asks. Post-approval commits (CI fixes, PR feedback) follow `diff-review`'s re-review rule before re-reporting readiness.
 
 ## When to use another skill
 

@@ -70,12 +70,12 @@ npx skills add jaoppb/skills --skill spdd-bootstrap -g
 
 | Skill | Description & Primary Trigger | Structure |
 | :--- | :--- | :--- |
-| [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md) | Coordinates multiple agents in parallel across separate Git worktrees using [Herdr](https://herdr.dev). Enforces wave planning, optional pre-wave `plan-review`, mandatory initial grilling (`grill-me`), multi-lens `diff-review` loops, per-host protocols, and automated PR creation. | Root `SKILL.md` + 9 workflow runbooks under `references/` + 4 host protocols under `references/protocols/` + Kiro agent templates under `references/kiro-agents/` + `scripts/sync_kiro_agents.py`. |
+| [`herdr-multi-agent`](./skills/herdr-multi-agent/SKILL.md) | Coordinates multiple agents in parallel across separate Git worktrees using [Herdr](https://herdr.dev). Enforces dependency-graph planning, optional pre-run `plan-review`, mandatory initial grilling (`grill-me`), multi-lens `diff-review` loops, per-host protocols, and automated PR creation. | Root `SKILL.md` + 9 workflow runbooks under `references/` + 4 host protocols under `references/protocols/` + Kiro agent templates under `references/kiro-agents/` + `scripts/sync_kiro_agents.py`. |
 | [`herdr`](./skills/herdr/SKILL.md) | Inspects and controls panes, tabs, workspaces, and agents running under the Herdr workspace manager via the `herdr` CLI. | Standalone `SKILL.md`. |
 | [`implement`](./skills/implement/SKILL.md) | Implements a single issue, spec, or task end-to-end in one session: branch/worktree setup, mandatory `grill-me`, optional `plan-review`, checks/tests, multi-lens `diff-review` loop, and PR creation without Herdr or multi-agent overhead. | Standalone `SKILL.md`. |
 | [`grill-me`](./skills/grill-me/SKILL.md) | Interrogates a spec, plan, or design one hard question at a time to expose gaps and undecided trade-offs, then writes the decisions back. Used by every `herdr-multi-agent` worker at startup. | Standalone `SKILL.md`. |
-| [`diff-review`](./skills/diff-review/SKILL.md) | Multi-lens, read-only diff/branch/PR review with content-aware baseline (`code-quality` for code, `docs-quality` for docs-only, or both for mixed substantial docs), 11 conditional specialist lenses (`testing`, `security`, `data`, `devops`, `observability`, `frontend`, `seo`, `product-owner`, `product-manager`, `performance`, `api-docs`), open discovery of external specialists, and smart delta re-runs. | Root `SKILL.md` + 13 lens guides under `references/lenses/`. |
-| [`plan-review`](./skills/plan-review/SKILL.md) | Multi-lens, read-only pre-implementation review of issue breakdowns, refinement tickets, epics, implementation plans, and RFCs/ADRs with mandatory `plan-quality` baseline, 4 conditional specialist lenses (`feasibility`, `slicing-and-dependencies`, `risk`, `product-alignment`), open discovery of external specialists, and revision-snapshot delta re-runs. | Root `SKILL.md` + 5 lens guides under `references/lenses/`. |
+| [`diff-review`](./skills/diff-review/SKILL.md) | Multi-lens, read-only diff/branch/PR review with content-aware baseline (`code-quality` for code, `docs-quality` for docs-only, or both for mixed substantial docs), 11 conditional specialist lenses (`testing`, `security`, `data`, `devops`, `observability`, `frontend`, `seo`, `product-owner`, `product-manager`, `performance`, `api-docs`), open discovery of external specialists, and smart delta re-runs. | Root `SKILL.md` + shared `references/reviewer-contract.md` + 13 lens guides under `references/lenses/`. |
+| [`plan-review`](./skills/plan-review/SKILL.md) | Multi-lens, read-only pre-implementation review of issue breakdowns, refinement tickets, epics, implementation plans, and RFCs/ADRs with mandatory `plan-quality` baseline, 4 conditional specialist lenses (`feasibility`, `slicing-and-dependencies`, `risk`, `product-alignment`), open discovery of external specialists, and revision-snapshot delta re-runs. | Root `SKILL.md` + shared `references/reviewer-contract.md` + 5 lens guides under `references/lenses/`. |
 | [`codebase-audit`](./skills/codebase-audit/SKILL.md) | Audits a whole repository for smells, architecture, testing, security and tooling gaps by fanning work out to subagents, then produces a prioritized, issue-ready report. | Root `SKILL.md` + `references/` guides (generic, Rust, TypeScript/Next.js/React) + `scripts/`. |
 | [`spdd-bootstrap`](./skills/spdd-bootstrap/SKILL.md) | Generates, once per repository, SPDD skills (`spdd-analysis`, `spdd-reasons-canvas`, `spdd-generate`, `spdd-prompt-update`, plus `spdd-sync` when canvases are committed) tailored to that project's rules, architecture, check command and tracker. | Root `SKILL.md` + `references/` (profile, decisions, rendering, Cosmo worked example, `templates/`) + `scripts/render.py`. |
 
@@ -92,6 +92,7 @@ skills/
 ├── diff-review/
 │   ├── SKILL.md
 │   └── references/
+│       ├── reviewer-contract.md
 │       └── lenses/
 │           ├── api-docs.md
 │           ├── code-quality.md
@@ -119,6 +120,7 @@ skills/
 │       ├── agent-effort.md
 │       ├── cleanup.md
 │       ├── coordinator-rules.md
+│       ├── dependency-graph.md
 │       ├── grilling.md
 │       ├── kiro-agents/
 │       │   ├── diff-review-lens.md
@@ -133,13 +135,13 @@ skills/
 │       ├── reporting-protocol.md
 │       ├── review.md
 │       ├── topology.md
-│       ├── waves.md
 │       └── worker-prompts.md
 ├── implement/
 │   └── SKILL.md
 ├── plan-review/
 │   ├── SKILL.md
 │   └── references/
+│       ├── reviewer-contract.md
 │       └── lenses/
 │           ├── feasibility.md
 │           ├── plan-quality.md

@@ -4,11 +4,13 @@ Host-specific mechanics for coordinators and workers running under `--kind agy` 
 
 ## 1. Startup & Model Flags
 
-Look up `<model-id>` for the role (or CLI reviewer tier) in [../agent-effort.md](../agent-effort.md). Antigravity encodes effort inside `<model-id>` (inspect available IDs with `agy models`), so pass `--model` after `--` with **no** `--effort` flag:
+Look up `<model-id>` for the role (or CLI reviewer tier) in [../agent-effort.md](../agent-effort.md). Antigravity's `agy models` catalog encodes effort inside `<model-id>` (for example `gemini-4-neon-medium` for Top, `gemini-4-argon-medium` for Middle, and `gemini-4-hydrogen-medium` for Fast — inspect live IDs with `agy models`), so pass `--model` alone after `--`:
 
 ```bash
 herdr agent start <name> --kind agy --pane <pane-id> -- --model <model-id>
 ```
+
+`agy` also exposes an optional `--effort` flag (`low|medium|high|xhigh|max`); omit it for standard preset starts and use it only when explicitly overriding the effort suffix on a run.
 
 ## 2. Session Identity
 
@@ -46,4 +48,4 @@ Follow [../review.md](../review.md) and the installed `diff-review` ([diff-revie
    - `flagship` → `Model: "pro"`
    - `fast/balanced` → `Model: "flash"`
 4. **Reactive wakeup**: Stop calling tools after launching the round's sub-agents; Antigravity resumes automatically as each sub-agent replies (do not poll).
-5. **Fallback runner**: If `define_subagent` / `invoke_subagent` is unavailable, run reviewers via temporary Herdr review tabs in [fallback.md](fallback.md), passing §1's `-- --model <model-id>` flag for the CLI reviewer tier in [../agent-effort.md](../agent-effort.md) (`flagship` → Top, `fast/balanced` → Middle).
+5. **Fallback runner**: If `define_subagent` / `invoke_subagent` is unavailable, run reviewers via temporary Herdr review tabs in [fallback.md](fallback.md), passing §1's `-- --model <model-id>` flag for the CLI reviewer tier in [../agent-effort.md](../agent-effort.md) (`flagship` → Middle, `fast/balanced` → Fast).

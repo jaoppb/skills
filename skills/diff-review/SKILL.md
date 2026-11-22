@@ -15,13 +15,14 @@ The orchestrator selects the content-aware baseline(s) and conditional lenses, d
 diff-review/
 ├── SKILL.md
 └── references/
+    ├── reviewer-contract.md     # Shared read-only, severity & terse output contract
     └── lenses/
         ├── code-quality.md      # Mandatory baseline for code diffs (flagship)
         ├── docs-quality.md      # Mandatory baseline for docs-only diffs / mixed substantial docs (flagship)
-        ├── testing.md           # QA / SDET (flagship)
+        ├── testing.md           # QA / SDET (fast/balanced)
         ├── security.md          # AppSec (flagship)
         ├── data.md              # DBA / Data Eng (flagship)
-        ├── performance.md       # Performance (flagship)
+        ├── performance.md       # Performance (fast/balanced)
         ├── devops.md            # SRE / Platform (fast/balanced)
         ├── observability.md     # Tracing, metrics & logging (fast/balanced)
         ├── frontend.md          # UI / a11y / Impeccable audit (fast/balanced)
@@ -38,7 +39,8 @@ diff-review/
 1. **Read-only reviewers**: Every reviewer reports findings only and edits nothing.
 2. **One fresh sub-agent per lens per round**: Never fold two lenses into one sub-agent, and never reuse a sub-agent across rounds.
 3. **Fail loud without sub-agents**: If the host environment cannot spawn sub-agents, stop and report the gap to the user/coordinator. Do not silently collapse lenses into a single-pass self-review.
-4. **No hard lens cap**: Rely on tight activation triggers so typical diffs activate 1–4 lenses instead of spamming irrelevant reviewers.
+4. **Soft lens budget**: At most **3 conditional lenses** (external specialists included) beyond the baseline(s). Lenses activated by a hard trigger (`security`, `data`) do not count. Each lens over budget needs a one-line reason recorded in the ledger and the round summary.
+5. **Shared contract**: Pass every reviewer [references/reviewer-contract.md](references/reviewer-contract.md) (read-only rule, severities, terse output format) alongside its single lens guide.
 
 ---
 
@@ -51,6 +53,10 @@ Select at least one mandatory baseline based on what the diff actually touches:
 - **Docs-only diff** (`.md`, `docs/**`, `README*`, `AGENTS.md`, `SKILL.md`, ADRs, runbooks, guides — no executable code or runtime config) → `docs-quality` (mandatory; skip `code-quality`)
 - **Mixed diff with substantial docs changes** (code + guides/skills/architecture docs, beyond minor comment or catalog tweaks) → **both** `code-quality` and `docs-quality`
 
+### Trivial-Diff Path
+
+When the diff has **under 50 changed lines** (added + deleted, `git diff --shortstat`) and fires **no hard trigger**, run the baseline lens(es) alone. Hard triggers: auth/authz, secrets/credentials, migrations/schemas, crypto, dependency manifests/lockfiles, or public API/CLI contracts — each activates its lens normally.
+
 ### Full Lens Roster
 
 Activate each conditional lens **only** when the diff or task context matches its trigger:
@@ -59,15 +65,15 @@ Activate each conditional lens **only** when the diff or task context matches it
 | :--- | :--- | :--- | :--- |
 | `code-quality` | `flagship` | **Mandatory baseline** whenever executable code, scripts, or runtime/build config changed | [code-quality.md](references/lenses/code-quality.md) |
 | `docs-quality` | `flagship` | **Mandatory baseline** for docs-only diffs; co-baseline on mixed diffs with substantial documentation/guide/skill changes | [docs-quality.md](references/lenses/docs-quality.md) |
-| `testing` | `flagship` | Behavior/logic changed, tests added/modified, or bugfix without regression test | [testing.md](references/lenses/testing.md) |
+| `testing` | `fast/balanced` | Behavior/logic changed, tests added/modified, or bugfix without regression test (not pure refactors whose existing tests still pass) | [testing.md](references/lenses/testing.md) |
 | `security` | `flagship` | Auth/authz, input parsing, crypto, secrets, headers/CORS, file/shell/SQL ops, or dependencies changed | [security.md](references/lenses/security.md) |
 | `data` | `flagship` | Migrations, schemas, ORM models, queries, indexes, transactions, or PII handling changed | [data.md](references/lenses/data.md) |
-| `performance` | `flagship` | Hot paths, loops/queries, caching, concurrency, network waterfalls, memory/FD lifecycle, or bundle size affected | [performance.md](references/lenses/performance.md) |
+| `performance` | `fast/balanced` | Hot paths, loops/queries, caching, concurrency, network waterfalls, memory/FD lifecycle, or bundle size affected | [performance.md](references/lenses/performance.md) |
 | `devops` | `fast/balanced` | CI/CD workflows, Docker/IaC, deploy scripts, runtime config/env, or healthchecks changed | [devops.md](references/lenses/devops.md) |
 | `observability` | `fast/balanced` | Tracing, metrics, structured logging, SLO/alert rules, workers/queues, or retry/error boundaries changed | [observability.md](references/lenses/observability.md) |
 | `frontend` | `fast/balanced` | UI components, styles, layout, client state, forms, or accessibility changed | [frontend.md](references/lenses/frontend.md) |
 | `seo` | `fast/balanced` | Public web pages, SSR/SSG routes, metadata/OG, canonicals, sitemaps, `robots.txt`, or JSON-LD changed | [seo.md](references/lenses/seo.md) |
-| `product-owner` | `fast/balanced` | Issue/spec/grill decisions or user-facing acceptance criteria exist for the branch | [product-owner.md](references/lenses/product-owner.md) |
+| `product-owner` | `fast/balanced` | The issue/spec has explicit acceptance criteria or confirmed grill decisions that the diff could break (not merely because an issue exists) | [product-owner.md](references/lenses/product-owner.md) |
 | `product-manager` | `fast/balanced` | Multi-step user flows, feature flags, rollout/telemetry, or MVP scope boundaries are affected | [product-manager.md](references/lenses/product-manager.md) |
 | `api-docs` | `fast/balanced` | Public HTTP/RPC/CLI/SDK interfaces, schemas, error shapes, or code-to-docs contract sync changed | [api-docs.md](references/lenses/api-docs.md) |
 
@@ -82,9 +88,9 @@ Before dispatching Round 1, scan project and user agent/skill directories for in
 Ignore `herdr-multi-agent`-managed profiles (marked with `<!-- herdr-multi-agent-managed: ... -->` or `"not an external specialist override"`, including `herdr-*`, `diff-review-*`, `plan-review-*`, and any legacy `review-*` wrappers).
 
 When a discovered specialist matches the diff or task:
-- **Overlapping domain**: If it clearly covers the same domain as a built-in lens (e.g. a project-specific security or UI reviewer), it **replaces** that built-in lens.
+- **Overlapping domain**: If it covers the same domain as a built-in lens, even partly (e.g. a project-specific security or UI reviewer), it **replaces** that built-in lens. Never run both.
 - **Distinct specialty**: If it covers a domain not in the built-in roster, run it **alongside** the active built-in lenses.
-- **Contract**: Bind every external specialist to the exact same read-only rule and severity bar (`blocker` / `material` / `nitpick`). Use `fast/balanced` unless the external agent is explicitly tagged as deep/flagship.
+- **Contract**: Bind every external specialist to [references/reviewer-contract.md](references/reviewer-contract.md). Use `fast/balanced` unless the external agent is explicitly tagged as deep/flagship.
 
 ---
 
@@ -94,14 +100,16 @@ Select the sub-agent model tier by lens depth using portable capability tiers (m
 
 | Tier | Capability | Lenses |
 | :--- | :--- | :--- |
-| `flagship` | Strongest reasoning tier | `code-quality`, `docs-quality`, `testing`, `security`, `data`, `performance` (and deep-tagged external agents) |
-| `fast/balanced` | Fast general-purpose tier | `frontend`, `seo`, `devops`, `observability`, `product-owner`, `product-manager`, `api-docs` (and external agents by default) |
+| `flagship` | Strongest reasoning tier | `code-quality`, `docs-quality`, `security`, `data` (and deep-tagged external agents) |
+| `fast/balanced` | Fast general-purpose tier | `testing`, `performance`, `frontend`, `seo`, `devops`, `observability`, `product-owner`, `product-manager`, `api-docs` (and external agents by default) |
+
+On a docs-only diff that qualifies for the trivial-diff path, the orchestrator may dispatch `docs-quality` on `fast/balanced` (hosts with fixed per-lens profiles, such as synced Kiro agents, keep `flagship`).
 
 ---
 
 ## 5. Severity Mapping & Approval Bar
 
-Every lens emits findings with one of four severities:
+Every lens emits findings in the terse format defined in [references/reviewer-contract.md](references/reviewer-contract.md), with one of four severities:
 - **`blocker` (P0)**: Must fix before approval.
 - **`material` (P1)**: Must fix before approval.
 - **`nitpick` (P2/P3)**: Non-blocking; the author may fix or reject with a written reason.
@@ -127,14 +135,14 @@ Maintain a temporary ledger file in `/tmp` or the session scratch directory (nev
 
 ### Round N+1 (after a fix commit or revision)
 Re-run **only**:
-1. **The active baseline lens(es)** (`code-quality` and/or `docs-quality` — always re-run to catch fix-induced complexity, regressions, or contradictions),
-2. **any lens that rejected in Round N**, and
-3. **any conditional lens, baseline lens, or external specialist whose domain files changed** in `git diff <prev_round_sha>..HEAD` (or a written delta diff artifact when sandboxing prevents git access) — both invalidating previously approved lenses and activating newly triggered inactive lenses (adding them to `active_lenses`, including activating `code-quality` if a docs-only branch later introduces code). Check each lens's invalidation triggers/globs in `references/lenses/<lens>.md`, falling back conservatively to re-running whenever uncertain.
+1. **The active baseline lens(es)** (`code-quality` and/or `docs-quality`) **only when** the delta is ≥30 changed lines or adds a new file, function, or module (small targeted fixes for other lenses skip the baseline),
+2. **any lens that rejected in Round N** (baselines included), and
+3. **any conditional lens or external specialist whose domain files changed** (or a baseline newly activated by the delta) in `git diff <prev_round_sha>..HEAD` (or a written delta diff artifact when sandboxing prevents git access) — both invalidating previously approved lenses and activating newly triggered inactive lenses (adding them to `active_lenses`, including activating `code-quality` if a docs-only branch later introduces code). Check each lens's invalidation triggers/globs in `references/lenses/<lens>.md`, falling back conservatively to re-running whenever uncertain.
 
-Pass each re-run sub-agent:
-- the current branch/working-tree diff (`git diff origin/<base>...HEAD` or written diff artifact),
-- the delta since the prior round (`git diff <prev_round_sha>..HEAD` or written delta diff artifact), and
-- its prior rounds' `fixed` / `rejected` / `deferred` ledger so it focuses on regressions and unresolved gaps without re-litigating settled nitpicks.
+Pass each re-run sub-agent a **delta-only brief**:
+- the delta since the prior round (`git diff <prev_round_sha>..HEAD` or written delta diff artifact) and the changed-file list,
+- its own unresolved findings plus one-line summaries of its settled (`fixed` / `rejected` / `deferred`) ones — never other lenses' findings, and
+- the full branch diff only as a path (`git diff origin/<base>...HEAD` or written diff artifact) to open on demand.
 
 Update `prev_round_sha` and the temporary ledger at the end of the round.
 

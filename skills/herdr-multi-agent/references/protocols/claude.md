@@ -34,4 +34,4 @@ Follow [../review.md](../review.md) and the installed `diff-review` ([diff-revie
 2. **Two-tier model mapping** (take each lens's tier from [diff-review/SKILL.md](../../../diff-review/SKILL.md) §2/§4 or [plan-review/SKILL.md](../../../plan-review/SKILL.md) §2/§4; Claude's `Agent` tool accepts family aliases rather than versioned CLI IDs):
    - `flagship` → `model: "opus"`
    - `fast/balanced` → `model: "sonnet"`
-3. **Fallback runner**: If Claude's native `Agent` tool is unavailable, run reviewers via temporary Herdr review tabs in [fallback.md](fallback.md), passing §1's `-- --model <model-id> --effort medium` flags for the CLI reviewer tier in [../agent-effort.md](../agent-effort.md) (`flagship` → Top, `fast/balanced` → Middle).
+3. **Fallback runner**: If Claude's native `Agent` tool is unavailable, run reviewers via temporary Herdr review tabs in [fallback.md](fallback.md), passing §1's `-- --model <model-id> --effort medium` flags for the CLI reviewer tier in [../agent-effort.md](../agent-effort.md) (`flagship` → Middle, `fast/balanced` → Fast).

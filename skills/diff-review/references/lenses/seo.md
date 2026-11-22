@@ -8,9 +8,7 @@
   - Redirect/rewrite configs (`next.config.*`, `vercel.json`, `_redirects`)
   - *Conservative fallback*: re-run whenever uncertain whether a fix alters public page rendering, URLs, or metadata.
 
----
-
-## Primary Review Questions
+## Check
 
 - **Crawlability & indexing**: Are public pages accidentally marked `noindex` or blocked in `robots.txt`? Are private/auth/preview pages properly excluded?
 - **Metadata & social cards**: Unique, descriptive `<title>` and `<meta name="description">`, plus valid OpenGraph / Twitter card tags (`og:title`, `og:description`, `og:image`, `og:url`)?
@@ -18,12 +16,7 @@
 - **Structured data (JSON-LD)**: Does JSON-LD match visible page content and valid schema.org types without syntax errors?
 - **SSR & Core Web Vitals**: Is critical indexable content server-rendered rather than hidden behind client-only fetch? Are hero images sized with explicit dimensions / `fetchpriority` to avoid CLS and LCP regressions?
 
----
-
-## Severity Mapping
+## Presumptive Blockers
 
 - **`blocker` (P0)**: Accidental `noindex` / `robots.txt` block on production public pages, broken canonicals pointing to wrong/localhost URLs, or broken URL migration without redirects.
 - **`material` (P1)**: Missing/duplicate `<title>` or description on new public routes, invalid JSON-LD, client-only rendering of primary SEO content, or severe LCP/CLS regression.
-- **`nitpick` (P2/P3)**: Optional OG tag enhancements or minor structured-data additions.
-
-Approve only with **zero `blocker` and zero `material` findings**.

@@ -5,7 +5,7 @@ description: "Implement a single issue, spec, or task end-to-end in one agent se
 
 # Implement
 
-End-to-end single-session implementation workflow that preserves full engineering discipline — interrogation, tests, checks, multi-lens read-only review, and clean PR handoff — without multi-agent coordination, wave planning, or Herdr (`HERDR_ENV=1`) overhead.
+End-to-end single-session implementation workflow that preserves full engineering discipline — interrogation, tests, checks, multi-lens read-only review, and clean PR handoff — without multi-agent coordination, dependency-graph planning, or Herdr (`HERDR_ENV=1`) overhead.
 
 **Companion skills:** Requires `grill-me` and `diff-review` (plus `plan-review` when triggered). Works standalone in any repository and on any host that supports read-only sub-agents.
 

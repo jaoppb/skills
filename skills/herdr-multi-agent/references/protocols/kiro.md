@@ -6,7 +6,7 @@ Host-specific mechanics for coordinators and workers running under `--kind kiro`
 
 `kiro-cli` enforces sub-agent tool restrictions (`tools: ["read"]` for read-only reviewers and `subagent` for orchestrators) through static custom agent profiles. To keep every Herdr task worktree `git status -sb` clean for [../cleanup.md](../cleanup.md) without writing untracked `.kiro/agents/` files into worktrees, `herdr-multi-agent` syncs namespaced profiles (`herdr-coordinator.md`, `herdr-worker.md`, `diff-review-<lens>.md`, and `plan-review-<lens>.md` wrappers rendered from [../kiro-agents/herdr-coordinator.md](../kiro-agents/herdr-coordinator.md), [../kiro-agents/herdr-worker.md](../kiro-agents/herdr-worker.md), [../kiro-agents/diff-review-lens.md](../kiro-agents/diff-review-lens.md), and [../kiro-agents/plan-review-lens.md](../kiro-agents/plan-review-lens.md)) into `~/.kiro/agents/` via [../../scripts/sync_kiro_agents.py](../../scripts/sync_kiro_agents.py).
 
-Before spawning any `--kind kiro` workers (or running pre-wave `plan-review` via `subagent`), the coordinator runs:
+Before spawning any `--kind kiro` workers (or running pre-run `plan-review` via `subagent`), the coordinator runs:
 
 ```bash
 python3 <skill-dir>/scripts/sync_kiro_agents.py --check
@@ -25,7 +25,7 @@ Resolve exact available Claude model slugs on the host using:
 python3 <skill-dir>/scripts/sync_kiro_agents.py --print-models
 ```
 
-This queries `kiro-cli chat --list-models --format json` and picks the highest semantic `claude-opus-*` and `claude-sonnet-*` slugs (preferring canonical non-dated slugs over 8-digit dated snapshots). Look up the role's tier in [../agent-effort.md](../agent-effort.md) (default Preset 3: Coordinator = Middle `<sonnet-id>`, Worker = Top `<opus-id>`, both at `medium` effort) and pass `chat`, `--agent`, `--model`, and `--effort` after `--`:
+This queries `kiro-cli chat --list-models --format json` and picks the highest semantic `claude-opus-*` and `claude-sonnet-*` slugs (preferring canonical non-dated slugs over 8-digit dated snapshots). Look up the role's tier in [../agent-effort.md](../agent-effort.md) (default Preset 2: Coordinator = Middle `<sonnet-id>`, Worker = Fast `<sonnet-id>`, both at `medium` effort; an opt-in Top worker passes `--model <opus-id>`) and pass `chat`, `--agent`, `--model`, and `--effort` after `--`:
 
 ```bash
 # Coordinator (when launched via herdr agent start)
@@ -58,10 +58,10 @@ Follow [../review.md](../review.md) and the installed `diff-review` ([diff-revie
 
 1. **Ignore managed wrappers during Open Discovery**: When scanning `.kiro/agents/` and `~/.kiro/agents/` under `diff-review` §3 or `plan-review` §3, ignore `herdr-coordinator.md`, `herdr-worker.md`, managed `diff-review-<lens>.md` and `plan-review-<lens>.md` profiles, and any legacy `review-<lens>.md` profiles (marked with `<!-- herdr-multi-agent-managed: ... -->` and `"not an external specialist override"` per [../review.md](../review.md)).
 2. **Write `/tmp` artifacts first**: Synced `diff-review-<lens>.md` and `plan-review-<lens>.md` profiles enforce read-only execution structurally via pure `tools: ["read"]` (omitting `write` / `fs_write` / `fs_append` / `str_replace` / `delete_file`, `shell`, and `subagent`, with `fs_read` pre-allowed on `/tmp/**`). Because reviewers have no `shell` tool, write `/tmp/diff-<task>-r<n>.patch`, `/tmp/files-<task>-r<n>.txt`, and (on Round N+1) `/tmp/delta-<task>-r<n>.patch` before each `diff-review` round — or `/tmp/plan-<slug>-r<n>.md` and (on Round N+1) `/tmp/plan-delta-<slug>-r<n>.diff` before each `plan-review` round — per [../review.md](../review.md). Never write `.kiro/agents/` files into the worktree.
-3. **One fresh `subagent` (`invoke_sub_agent`) call per active lens per round**: Invoke Kiro's native `subagent` (`invoke_sub_agent`) tool in parallel targeting the synced `diff-review-<lens>` (worker diff review) or `plan-review-<lens>` (coordinator pre-wave plan review) custom agent — or a discovered read-only external `.kiro/agents/<specialist>` profile — passing the canonical reviewer brief from [../review.md](../review.md). Never combine multiple lenses into one sub-agent, and never reuse a sub-agent across rounds.
+3. **One fresh `subagent` (`invoke_sub_agent`) call per active lens per round**: Invoke Kiro's native `subagent` (`invoke_sub_agent`) tool in parallel targeting the synced `diff-review-<lens>` (worker diff review) or `plan-review-<lens>` (coordinator pre-run plan review) custom agent — or a discovered read-only external `.kiro/agents/<specialist>` profile — passing the canonical reviewer brief from [../review.md](../review.md). Never combine multiple lenses into one sub-agent, and never reuse a sub-agent across rounds.
    - **Two-tier frontmatter model mapping** (synced into `~/.kiro/agents/{diff-review,plan-review}-<lens>.md` by `sync_kiro_agents.py`, inheriting session effort):
-     - `flagship` → `<opus-id>` (`diff-review`: `code-quality`, `docs-quality`, `testing`, `security`, `data`, `performance`; `plan-review`: `plan-quality`, `feasibility`, `slicing-and-dependencies`, `risk`)
-     - `fast/balanced` → `<sonnet-id>` (`diff-review`: `devops`, `observability`, `frontend`, `seo`, `product-owner`, `product-manager`, `api-docs`; `plan-review`: `product-alignment`)
+     - `flagship` → `<opus-id>` (`diff-review`: `code-quality`, `docs-quality`, `security`, `data`; `plan-review`: `plan-quality`, `feasibility`, `risk`)
+     - `fast/balanced` → `<sonnet-id>` (`diff-review`: `testing`, `performance`, `devops`, `observability`, `frontend`, `seo`, `product-owner`, `product-manager`, `api-docs`; `plan-review`: `slicing-and-dependencies`, `product-alignment`)
 4. **Fallback CLI review tabs**: If Kiro's native `subagent` tool is unavailable (or an external specialist lacks a read-only Kiro profile), run temporary Herdr review tabs per [fallback.md](fallback.md) §4, starting each reviewer with `--kind kiro` and explicit two-tier flags after `--` (include `--agent diff-review-<lens>` or `--agent plan-review-<lens>` for built-in lenses, and omit `--agent` when running an external specialist lacking a read-only Kiro profile, relying on [fallback.md](fallback.md) §4 step 5's worktree-cleanliness check):
-   - `flagship` → `-- chat [--agent <prefix>-<lens>] --model <opus-id> --effort medium`
-   - `fast/balanced` → `-- chat [--agent <prefix>-<lens>] --model <sonnet-id> --effort high`
+   - `flagship` (Middle) → `-- chat [--agent <prefix>-<lens>] --model <sonnet-id> --effort high`
+   - `fast/balanced` (Fast) → `-- chat [--agent <prefix>-<lens>] --model <sonnet-id> --effort medium`

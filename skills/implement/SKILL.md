@@ -18,7 +18,7 @@ End-to-end single-session implementation workflow that preserves full engineerin
    - **Local spec or plan file**: read the target file completely along with any files it references.
    - **Pasted prompt / inline task**: capture the stated goal, constraints, and acceptance criteria from the conversation.
 2. **Read project context:** Read repository rules (`AGENTS.md`, `CLAUDE.md`, or equivalent), build/lint/test commands, and the existing code or docs the task touches.
-3. **Resume an existing task workspace:** if the current branch or worktree already belongs to this task (named for it, or holding commits that reference it), reuse it instead of re-branching and resume at the first unmet gate: confirmed `grill-me` decisions present → skip §2; task commits present → go to §4 verification and §5. If ownership is ambiguous, ask.
+3. **Resume an existing task workspace:** if the current branch or worktree already belongs to this task (named for it, or holding commits that reference it), reuse it instead of re-branching and resume at the first unmet gate, in order: no confirmed `grill-me` decisions → run §2; otherwise, task commits present → §4 verification, then §5. If ownership is ambiguous, ask.
 4. **Otherwise, prepare a clean branch off the latest base branch:**
    - Fetch and branch off the latest base branch (e.g., `origin/main` or the repo default) using a clean branch name such as `feat/<slug>` or `fix/<slug>`.
    - **Default:** create and switch to the new branch in the current checkout.
@@ -46,7 +46,7 @@ Run `plan-review` before implementation **only** if the user requests it or if t
 
 ### 5. Mandatory multi-lens `diff-review` loop
 
-Run `diff-review` against the branch diff (`origin/<base>...HEAD`, or the working-tree/base diff when no remote base exists) **before** opening a PR or declaring done, following its lens selection, dispatch, delta re-run, and escalation rules. Implement-specific seams:
+Run `diff-review` against the branch diff (`git diff origin/<base>...HEAD`, or `git diff <base>...HEAD` / the working-tree diff when no remote base exists) **before** opening a PR or declaring done, following its lens selection, dispatch, delta re-run, and escalation rules. Implement-specific seams:
 
 1. **Fail loud without sub-agents:** if the host cannot spawn read-only sub-agents, stop before the PR and report the gap per `diff-review` (no self-review fallback).
 2. **Fix in new commits:** address `blocker` and `material` findings in new commits, re-run §4 verification, then run the next `diff-review` delta round until approved.

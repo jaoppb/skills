@@ -113,7 +113,7 @@ Every lens emits findings with one of four severities:
 
 ## 6. Smart Delta Re-Runs & Ledger State
 
-When reviewers cannot run `git` (e.g., sandboxed sub-agents inside a `git worktree`, whose `.git` gitfile points outside the worktree root), write the branch diff, changed-file list, and (on Round N+1) the round delta to `/tmp` or the session scratch directory before each round, and pass those files instead of git commands.
+In every round (including Round 1), when reviewers cannot run `git` (e.g., sandboxed sub-agents inside a `git worktree`, whose `.git` gitfile points outside the worktree root), write the branch diff, changed-file list, and (on Round N+1) the round delta to `/tmp` or the session scratch directory before each round, and pass those files instead of git commands.
 
 Maintain a temporary ledger file in `/tmp` or the session scratch directory (never commit it to the repository) so round state survives context compaction. Record:
 - `prev_round_sha`: the `HEAD` commit reviewed in the last round (or prior working-tree snapshot hash when reviewing uncommitted changes)

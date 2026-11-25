@@ -1,9 +1,9 @@
 ---
-name: herdr-multi-agent
+name: multi-implement
 description: "Coordinate several autonomous coding agents (Claude, Antigravity, Kiro, and others) through Herdr: one worktree and one agent per task, every agent starting with a grill-me session, a coordinator that always models tasks as a dependency graph with multi-lens diff-review tags (and optional pre-run plan-review), read-only review until approved before any merge, per-host protocols, and a tagged reporting protocol. Use only when the user asks to start, organize or coordinate multiple agents or worktrees with Herdr, alongside the herdr skill. Do not use for implementing a single issue or task in one session (use implement), single-agent Herdr pane control (use herdr) or sub-agent delegation outside Herdr. Requires HERDR_ENV=1."
 ---
 
-# Herdr multi-agent coordination
+# Multi-Implement
 
 Lessons from running a coordinator agent and several worker agents, one per task, each in its own Herdr worktree (requires the companion `herdr`, `grill-me`, `diff-review`, and `plan-review` skills installed alongside it). Load the `herdr` skill first for the CLI itself; this skill is the working method on top of it. Detect your host `--kind` from `herdr agent list` (matching `$HERDR_PANE_ID`) and load **only** the matching protocol runbook ([references/protocols/claude.md](references/protocols/claude.md), [references/protocols/agy.md](references/protocols/agy.md), [references/protocols/kiro.md](references/protocols/kiro.md), or [references/protocols/fallback.md](references/protocols/fallback.md) for any other kind). The workflow details live in the reference files linked below; read the one that matches the step you are on.
 
@@ -38,7 +38,7 @@ Lessons from running a coordinator agent and several worker agents, one per task
 | [references/protocols/agy.md](references/protocols/agy.md) | `--kind agy` startup flags, `SKILL.md` loading, blocking `ask_question`, `/tmp` artifact prep, and `invoke_subagent` review dispatch |
 | [references/protocols/kiro.md](references/protocols/kiro.md) | `--kind kiro` preflight `~/.kiro/agents/` sync, `chat` + `--agent`/`--model`/`--effort` startup flags, `[WAITING-FOR-PERSON]` sentinel, and `subagent` review dispatch |
 | [references/protocols/fallback.md](references/protocols/fallback.md) | All other `--kind` agents: bare startup, `[WAITING-FOR-PERSON]` sentinel, and temporary Herdr review-tab dispatch |
-| [scripts/sync_kiro_agents.py](scripts/sync_kiro_agents.py) | Idempotent `~/.kiro/agents/` sync and `--check` preflight rendering `herdr-*`, read-only `diff-review-*`, and read-only `plan-review-*` profiles from [references/kiro-agents/](references/kiro-agents/) |
+| [scripts/sync_kiro_agents.py](scripts/sync_kiro_agents.py) | Idempotent `~/.kiro/agents/` sync and `--check` preflight rendering `multi-implement-*`, read-only `diff-review-*`, and read-only `plan-review-*` profiles from [references/kiro-agents/](references/kiro-agents/) |
 | [references/dependency-graph.md](references/dependency-graph.md) | Building the dependency graph, overlap prediction, `lenses: [<baseline>, ...]`, optional pre-run `plan-review`, spawning unblocked tasks on merge, dispatching `go` after `[DONE-READ]`, re-checking with real diffs |
 | [references/grilling.md](references/grilling.md) | The grill every worker starts with |
 | [references/agent-effort.md](references/agent-effort.md) | Model tiers and selectable presets (Presets 1–4, default Preset 2; Top is opt-in) for coordinators and workers |

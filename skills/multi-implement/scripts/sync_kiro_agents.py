@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Sync specialized Kiro custom agents into ~/.kiro/agents/ for herdr-multi-agent.
+"""Sync specialized Kiro custom agents into ~/.kiro/agents/ for multi-implement.
 
 Usage:
     python3 sync_kiro_agents.py [--check] [--dry-run] [--force]
@@ -11,7 +11,7 @@ Usage:
                                 [--print-models]
 
 Renders and installs the namespaced Kiro custom agent profiles managed by
-herdr-multi-agent (`herdr-coordinator.md`, `herdr-worker.md`, read-only
+multi-implement (`multi-implement-coordinator.md`, `multi-implement-worker.md`, read-only
 `diff-review-<lens>.md` wrappers embedding `diff-review/references/reviewer-contract.md`
 and `diff-review/references/lenses/<lens>.md`, and read-only `plan-review-<lens>.md`
 wrappers embedding `plan-review/references/reviewer-contract.md` and
@@ -19,7 +19,7 @@ wrappers embedding `plan-review/references/reviewer-contract.md` and
 touching task git worktrees or non-namespaced user agents.
 
 Each managed `.md` file embeds an HTML provenance comment immediately after its
-YAML frontmatter (`<!-- herdr-multi-agent-managed: sha256=<digest> -->`; no
+YAML frontmatter (`<!-- multi-implement-managed: sha256=<digest> -->`; no
 sidecar `.json` files are written into `~/.kiro/agents/`).
 
 Exit codes:
@@ -52,7 +52,7 @@ MODEL_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
 LENS_NAME_RE = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
 LENS_TIER_RE = re.compile(r"^-\s*\*\*Tier\*\*:\s*`(flagship|fast/balanced)`\s*$", re.M)
 PROVENANCE_RE = re.compile(
-    r"\A(---\n.*?\n---\n)<!-- herdr-multi-agent-managed: sha256=([0-9a-f]{64}) -->\n",
+    r"\A(---\n.*?\n---\n)<!-- multi-implement-managed: sha256=([0-9a-f]{64}) -->\n",
     re.S,
 )
 FRONTMATTER_SPLIT_RE = re.compile(r"\A(---\n.*?\n---\n)", re.S)
@@ -254,7 +254,7 @@ def load_review_lenses(skill_dir: Path, *, skill_name: str, cli_flag: str) -> di
     if not lenses_dir.is_dir():
         raise SyncError(
             f"companion {skill_name} lenses directory not found at '{lenses_dir}' "
-            f"(install '{skill_name}' alongside 'herdr-multi-agent' or pass {cli_flag})"
+            f"(install '{skill_name}' alongside 'multi-implement' or pass {cli_flag})"
         )
 
     try:
@@ -290,7 +290,7 @@ def load_reviewer_contract(skill_dir: Path, *, skill_name: str, cli_flag: str) -
     if not contract_path.is_file():
         raise SyncError(
             f"companion {skill_name} reviewer contract not found at '{contract_path}' "
-            f"(install '{skill_name}' alongside 'herdr-multi-agent' or pass {cli_flag})"
+            f"(install '{skill_name}' alongside 'multi-implement' or pass {cli_flag})"
         )
     try:
         return contract_path.read_text(encoding="utf-8").strip()
@@ -316,7 +316,7 @@ def render_with_provenance(template: str, values: dict[str, str]) -> str:
     digest = sha256(unmarked)
     header = fm_match.group(1)
     rest = unmarked[fm_match.end():]
-    return f"{header}<!-- herdr-multi-agent-managed: sha256={digest} -->\n{rest}"
+    return f"{header}<!-- multi-implement-managed: sha256={digest} -->\n{rest}"
 
 
 def build_expected_profiles(
@@ -331,8 +331,8 @@ def build_expected_profiles(
     validate_model_id(opus_model, "opus_model")
     validate_model_id(sonnet_model, "sonnet_model")
 
-    coord_tpl_path = templates_dir / "herdr-coordinator.md"
-    worker_tpl_path = templates_dir / "herdr-worker.md"
+    coord_tpl_path = templates_dir / "multi-implement-coordinator.md"
+    worker_tpl_path = templates_dir / "multi-implement-worker.md"
     diff_lens_tpl_path = templates_dir / "diff-review-lens.md"
     plan_lens_tpl_path = templates_dir / "plan-review-lens.md"
     for path in (coord_tpl_path, worker_tpl_path, diff_lens_tpl_path, plan_lens_tpl_path):
@@ -363,8 +363,8 @@ def build_expected_profiles(
 
     common = {"OPUS_MODEL": opus_model, "SONNET_MODEL": sonnet_model}
     profiles: dict[str, str] = {
-        "herdr-coordinator.md": render_with_provenance(coord_tpl, common),
-        "herdr-worker.md": render_with_provenance(worker_tpl, common),
+        "multi-implement-coordinator.md": render_with_provenance(coord_tpl, common),
+        "multi-implement-worker.md": render_with_provenance(worker_tpl, common),
     }
 
     for prefix, template, lenses, contract in (
@@ -456,7 +456,8 @@ def atomic_write(path: Path, content: str, mode: int) -> None:
 
 def is_managed_namespace(filename: str) -> bool:
     return filename.endswith(".md") and (
-        filename.startswith("herdr-")
+        filename.startswith("multi-implement-")
+        or filename.startswith("herdr-")
         or filename.startswith("diff-review-")
         or filename.startswith("plan-review-")
         or filename.startswith("review-")
@@ -519,7 +520,7 @@ def sync_profiles(
                     raise SyncError(f"cannot read '{existing}': {err}") from err
                 if PROVENANCE_RE.match(text):
                     print(
-                        f"stale  {existing} was generated by an older herdr-multi-agent version; "
+                        f"stale  {existing} was generated by an older multi-implement version; "
                         "delete it if obsolete"
                     )
 
@@ -582,7 +583,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="overwrite hand-edited or pre-existing unmanaged herdr-*.md / diff-review-*.md / plan-review-*.md files",
+        help="overwrite hand-edited or pre-existing unmanaged multi-implement-*.md / diff-review-*.md / plan-review-*.md files",
     )
     parser.add_argument(
         "--opus-model",
@@ -590,7 +591,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--sonnet-model",
-        help="explicit model slug override for Middle / Fast / advisory tier (herdr-coordinator, herdr-worker, and fast/balanced lenses)",
+        help="explicit model slug override for Middle / Fast / advisory tier (multi-implement-coordinator, multi-implement-worker, and fast/balanced lenses)",
     )
     parser.add_argument(
         "--models-json",

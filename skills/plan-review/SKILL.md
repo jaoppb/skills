@@ -59,7 +59,7 @@ Before dispatching Round 1, scan project and user agent/skill directories for in
 - Project: `.claude/agents/`, `.claude/skills/`, `.kiro/agents/`, `.agents/`
 - User: `~/.claude/agents/`, `~/.claude/skills/`, `~/.kiro/agents/`, `~/.agents/skills/`, `~/.gemini/config/`
 
-Ignore `herdr-multi-agent`-managed profiles (marked with `<!-- herdr-multi-agent-managed: ... -->` or `"not an external specialist override"`, including `herdr-*`, `diff-review-*`, `plan-review-*`, and any legacy `review-*` wrappers).
+Ignore `multi-implement`-managed profiles (marked with `<!-- multi-implement-managed: ... -->` or `"not an external specialist override"`, including `multi-implement-*`, `diff-review-*`, `plan-review-*`, and any legacy `herdr-*` or `review-*` wrappers).
 
 When a discovered specialist matches the plan's domain:
 - **Overlapping domain**: If it covers the same domain as a built-in lens, even partly, it **replaces** that built-in lens. Never run both.

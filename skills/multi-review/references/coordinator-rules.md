@@ -2,7 +2,7 @@
 
 ## 1. Spawning and monitoring workers
 
-- Spawn one worktree and one worker per confirmed PR ([topology.md](topology.md)), including the PR number, base branch, assigned `lenses: [...]`, effort preset, and coordinator pane ID in the worker's first prompt.
+- Spawn one worktree and one worker per confirmed PR ([topology.md](topology.md)), including the PR number, base branch, assigned `lenses: [...]`, effort preset, coordinator pane ID, and the reference paths to read (`worker-review.md`, `reporting-protocol.md`, and the worker's host `protocols/<kind>.md`) in the worker's first prompt.
 - Wait on workers with `herdr agent wait <name> --until ...` ([reporting-protocol.md](reporting-protocol.md)); never `sleep`-poll.
 - Whenever a worker is `blocked` or ends its visible output with `[WAITING-FOR-PERSON]` (for example, waiting on the person to validate and confirm its drafted GitHub review), **never** answer or send keys; tell the person which pane is waiting.
 

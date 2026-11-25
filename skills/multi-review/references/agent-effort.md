@@ -33,5 +33,5 @@ Model tiers from highest to lowest (`medium` effort by default; `agy` encodes ef
 
 ## Two-tier `diff-review` lens mapping
 
-- **Native sub-agents**: Map each active lens's tier (`diff-review/SKILL.md` §2/§4) to `"opus"` / `"sonnet"` ([protocols/claude.md](protocols/claude.md)) or `"pro"` / `"flash"` ([protocols/agy.md](protocols/agy.md)).
-- **Fallback CLI review tabs**: `flagship` lenses use **Middle** (`claude-opus-5-5 --effort medium`, `gemini-4-argon-medium`, or `kiro` `--model <sonnet-id> --effort high`) and `fast/balanced` lenses use **Fast** (`claude-sonnet-5-5 --effort medium`, `gemini-4-hydrogen-medium`, or `kiro` `--model <sonnet-id> --effort medium`); other `--kind` families start bare.
+- **Native sub-agents**: Map each active lens's tier (`diff-review/SKILL.md` §2/§4) to `"opus"` / `"sonnet"` ([protocols/claude.md](protocols/claude.md)), `"pro"` / `"flash"` ([protocols/agy.md](protocols/agy.md)), or `~/.kiro/agents/diff-review-<lens>.md` profiles via `invoke_sub_agent` when present ([protocols/kiro.md](protocols/kiro.md)).
+- **Fallback CLI review tabs**: `flagship` lenses use **Middle** (`--model claude-opus-5-5 --effort medium`, `--model gemini-4-argon-medium`, or `kiro` `chat --model <sonnet-id> --effort high`) and `fast/balanced` lenses use **Fast** (`--model claude-sonnet-5-5 --effort medium`, `--model gemini-4-hydrogen-medium`, or `kiro` `chat --model <sonnet-id> --effort medium`); other `--kind` families start bare.

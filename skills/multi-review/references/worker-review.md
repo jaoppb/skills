@@ -43,11 +43,11 @@ Verify every finding against the actual PR diff (`git diff origin/<baseRefName>.
 1. **Draft** the formal review:
    - Overall review status: `APPROVE` or `REQUEST_CHANGES`.
    - Concise top-level review body summarizing the verdict and key findings.
-   - Inline diff comments anchored to exact `(path, line, side: "RIGHT")` positions in the PR diff for every actionable `blocker` and `material` finding (and any high-value `nitpick` worth surfacing), including the rationale and concrete fix suggestion.
+   - Inline diff comments anchored to exact hunk positions (`path`, `line`, `side: "RIGHT"` for added/context lines or `side: "LEFT"` for deleted lines) for actionable `blocker` and `material` findings (and any high-value `nitpick` worth surfacing), including the rationale and concrete fix suggestion; place out-of-hunk or file-level findings in `body` so GitHub does not reject the request with HTTP 422.
 2. **Display** the full drafted review—status, summary body, every inline comment (`file:line`), and its rationale—directly to the person in your pane so they can validate the reasoning.
 3. **Ask for explicit confirmation** via the host's ask tool (`AskUserQuestion` / `ask_question`, or `[WAITING-FOR-PERSON]` on `kiro`/`fallback`) before posting to GitHub. Offer clear choices: post as drafted, adjust/edit before posting, or report locally without posting to GitHub.
 4. **Post only if confirmed**:
-   - If the review has inline comments, submit via `gh api repos/<owner>/<repo>/pulls/<N>/reviews` with `commit_id: <PR_HEAD>`, `event: "APPROVE" | "REQUEST_CHANGES"`, `body`, and `comments[]`.
+   - If the review has inline comments, submit via `gh api --method POST --input - repos/<owner>/<repo>/pulls/<N>/reviews` passing a JSON payload with `commit_id: <PR_HEAD>`, `event: "APPROVE" | "REQUEST_CHANGES"`, `body`, and `comments[]`.
    - If there are no inline comments, `gh pr review <N> --approve --body "..."` or `gh pr review <N> --request-changes --body "..."` may be used.
 
 ## 6. Report `[DONE <pr>]`

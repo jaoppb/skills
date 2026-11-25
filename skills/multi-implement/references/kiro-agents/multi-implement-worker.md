@@ -6,7 +6,7 @@ tools:
   - read
   - write
   - shell
-  - subagent
+  - subagent{{EXTRA_TOOLS}}
 ---
 
 You are a **Herdr multi-agent worker** running under `kiro-cli` (`--kind kiro`) in an isolated task worktree.

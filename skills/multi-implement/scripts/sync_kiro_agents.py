@@ -4,6 +4,7 @@
 Usage:
     python3 sync_kiro_agents.py [--check] [--dry-run] [--force]
                                 [--out-dir ~/.kiro/agents]
+                                [--config ~/.kiro/multi-implement.json]
                                 [--diff-review-dir <path>]
                                 [--plan-review-dir <path>]
                                 [--opus-model <slug>] [--sonnet-model <slug>]
@@ -17,6 +18,12 @@ and `diff-review/references/lenses/<lens>.md`, and read-only `plan-review-<lens>
 wrappers embedding `plan-review/references/reviewer-contract.md` and
 `plan-review/references/lenses/<lens>.md`) into `~/.kiro/agents/` without
 touching task git worktrees or non-namespaced user agents.
+
+Optional per-machine extra tools (such as MCP servers `@<server>`) can be
+configured in `<out-dir>/../multi-implement.json` (default
+`~/.kiro/multi-implement.json`, or `--config <path>`) under
+`{"extra_tools": {"shared": [...], "coordinator": [...], "worker": [...]}}`
+for `multi-implement-coordinator.md` and `multi-implement-worker.md`.
 
 Each managed `.md` file embeds an HTML provenance comment immediately after its
 YAML frontmatter (`<!-- multi-implement-managed: sha256=<digest> -->`; no
@@ -41,14 +48,22 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from typing import Iterable
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 TEMPLATES_DIR = SKILL_DIR / "references" / "kiro-agents"
 DEFAULT_DIFF_REVIEW_DIR = SKILL_DIR.parent / "diff-review"
 DEFAULT_PLAN_REVIEW_DIR = SKILL_DIR.parent / "plan-review"
 DEFAULT_OUT_DIR = Path.home() / ".kiro" / "agents"
+CONFIG_FILENAME = "multi-implement.json"
+BASE_AGENT_TOOLS = frozenset({"read", "write", "shell", "subagent"})
+CONFIG_TOP_KEYS = frozenset({"extra_tools"})
+EXTRA_TOOLS_KEYS = frozenset({"shared", "coordinator", "worker"})
 
 MODEL_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+TOOL_ID_RE = re.compile(
+    r"^(?:@[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)?|[A-Za-z0-9][A-Za-z0-9._-]*)$"
+)
 LENS_NAME_RE = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
 LENS_TIER_RE = re.compile(r"^-\s*\*\*Tier\*\*:\s*`(flagship|fast/balanced)`\s*$", re.M)
 PROVENANCE_RE = re.compile(
@@ -73,6 +88,83 @@ def validate_model_id(slug: str, source: str) -> str:
     if not isinstance(slug, str) or not MODEL_ID_RE.match(slug):
         raise SyncError(f"invalid model identifier from {source}: {slug!r}")
     return slug
+
+
+def validate_tool_id(tool: object, source: str) -> str:
+    """Validate a Kiro tool or MCP identifier against wildcards and YAML injection."""
+    if not isinstance(tool, str) or len(tool) > 128 or not TOOL_ID_RE.match(tool):
+        raise SyncError(f"invalid tool identifier from {source}: {tool!r}")
+    return tool
+
+
+def resolve_config_path(out_dir: Path, config_path: Path | None) -> tuple[Path, bool]:
+    """Return (config_path, required) for per-machine extra tools configuration."""
+    if config_path is not None:
+        return config_path.expanduser(), True
+    resolved_out = Path(os.path.abspath(os.fspath(out_dir.expanduser())))
+    return resolved_out.parent / CONFIG_FILENAME, False
+
+
+def load_extra_tools(config_path: Path, *, required: bool) -> tuple[list[str], list[str]]:
+    """Load and validate (coordinator_tools, worker_tools) from multi-implement.json."""
+    try:
+        raw = config_path.read_text(encoding="utf-8")
+    except FileNotFoundError as err:
+        if required:
+            raise SyncError(f"config file not found: '{config_path}'") from err
+        return [], []
+    except (OSError, UnicodeDecodeError) as err:
+        raise SyncError(f"cannot read config file '{config_path}': {err}") from err
+
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as err:
+        raise SyncError(f"invalid JSON in config file '{config_path}': {err}") from err
+
+    if not isinstance(payload, dict):
+        raise SyncError(f"config file '{config_path}' must contain a JSON object")
+
+    unknown_top = sorted(set(payload) - CONFIG_TOP_KEYS)
+    if unknown_top:
+        raise SyncError(f"unknown key(s) in '{config_path}': {', '.join(unknown_top)}")
+
+    extra_tools = payload.get("extra_tools", {})
+    if not isinstance(extra_tools, dict):
+        raise SyncError(f"'extra_tools' in '{config_path}' must be a JSON object")
+
+    unknown_roles = sorted(set(extra_tools) - EXTRA_TOOLS_KEYS)
+    if unknown_roles:
+        raise SyncError(
+            f"unknown extra_tools key(s) in '{config_path}': {', '.join(unknown_roles)}"
+        )
+
+    parsed: dict[str, list[str]] = {}
+    for key in ("shared", "coordinator", "worker"):
+        raw_list = extra_tools.get(key, [])
+        if not isinstance(raw_list, list):
+            raise SyncError(f"'extra_tools.{key}' in '{config_path}' must be a JSON array")
+        parsed[key] = [
+            validate_tool_id(item, f"{config_path} (extra_tools.{key})")
+            for item in raw_list
+        ]
+
+    return (
+        list(dict.fromkeys(parsed["shared"] + parsed["coordinator"])),
+        list(dict.fromkeys(parsed["shared"] + parsed["worker"])),
+    )
+
+
+def format_extra_tools(tools: Iterable[str], *, source: str) -> str:
+    """Validate, deduplicate against base tools, and format YAML list entries."""
+    seen = set(BASE_AGENT_TOOLS)
+    lines: list[str] = []
+    for item in tools:
+        tool = validate_tool_id(item, source)
+        if tool in seen:
+            continue
+        seen.add(tool)
+        lines.append(f'\n  - "{tool}"')
+    return "".join(lines)
 
 
 def extract_model_ids(payload: object) -> list[str]:
@@ -326,6 +418,8 @@ def build_expected_profiles(
     diff_review_dir: Path = DEFAULT_DIFF_REVIEW_DIR,
     plan_review_dir: Path = DEFAULT_PLAN_REVIEW_DIR,
     templates_dir: Path = TEMPLATES_DIR,
+    coordinator_extra_tools: Iterable[str] = (),
+    worker_extra_tools: Iterable[str] = (),
 ) -> dict[str, str]:
     """Render all managed Kiro custom agent files in memory."""
     validate_model_id(opus_model, "opus_model")
@@ -362,9 +456,15 @@ def build_expected_profiles(
     )
 
     common = {"OPUS_MODEL": opus_model, "SONNET_MODEL": sonnet_model}
+    coord_extras = format_extra_tools(coordinator_extra_tools, source="coordinator_extra_tools")
+    worker_extras = format_extra_tools(worker_extra_tools, source="worker_extra_tools")
     profiles: dict[str, str] = {
-        "multi-implement-coordinator.md": render_with_provenance(coord_tpl, common),
-        "multi-implement-worker.md": render_with_provenance(worker_tpl, common),
+        "multi-implement-coordinator.md": render_with_provenance(
+            coord_tpl, {**common, "EXTRA_TOOLS": coord_extras}
+        ),
+        "multi-implement-worker.md": render_with_provenance(
+            worker_tpl, {**common, "EXTRA_TOOLS": worker_extras}
+        ),
     }
 
     for prefix, template, lenses, contract in (
@@ -557,6 +657,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="target Kiro agents directory (default: ~/.kiro/agents)",
     )
     parser.add_argument(
+        "--config",
+        type=Path,
+        help="path to machine-local multi-implement JSON config (default: <out-dir>/../multi-implement.json)",
+    )
+    parser.add_argument(
         "--diff-review-dir",
         type=Path,
         default=DEFAULT_DIFF_REVIEW_DIR,
@@ -622,11 +727,18 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps({"opus": opus_model, "sonnet": sonnet_model}))
             return 0
 
+        config_path, config_required = resolve_config_path(args.out_dir, args.config)
+        coord_extra_tools, worker_extra_tools = load_extra_tools(
+            config_path, required=config_required
+        )
+
         expected = build_expected_profiles(
             opus_model=opus_model,
             sonnet_model=sonnet_model,
             diff_review_dir=args.diff_review_dir,
             plan_review_dir=args.plan_review_dir,
+            coordinator_extra_tools=coord_extra_tools,
+            worker_extra_tools=worker_extra_tools,
         )
         return sync_profiles(
             expected,

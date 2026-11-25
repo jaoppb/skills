@@ -42,6 +42,9 @@ npx skills add jaoppb/skills -g
 # Install multi-implement (Herdr multi-agent coordination; also install companion skills: herdr, grill-me, diff-review, plan-review)
 npx skills add jaoppb/skills --skill multi-implement -g
 
+# Install multi-review (Herdr parallel PR review coordination; also install companion skills: herdr, diff-review)
+npx skills add jaoppb/skills --skill multi-review -g
+
 # Install single-issue end-to-end implementation (also install companion skills: grill-me, diff-review, plan-review)
 npx skills add jaoppb/skills --skill implement -g
 
@@ -71,6 +74,7 @@ npx skills add jaoppb/skills --skill spdd-bootstrap -g
 | Skill | Description & Primary Trigger | Structure |
 | :--- | :--- | :--- |
 | [`multi-implement`](./skills/multi-implement/SKILL.md) | Coordinates multiple agents in parallel across separate Git worktrees using [Herdr](https://herdr.dev). Enforces dependency-graph planning, optional pre-run `plan-review`, mandatory initial grilling (`grill-me`), multi-lens `diff-review` loops, per-host protocols, and automated PR creation. | Root `SKILL.md` + 9 workflow runbooks under `references/` + 4 host protocols under `references/protocols/` + Kiro agent templates under `references/kiro-agents/` + `scripts/sync_kiro_agents.py`. |
+| [`multi-review`](./skills/multi-review/SKILL.md) | Coordinates multiple agents in parallel across isolated read-only Git worktrees using [Herdr](https://herdr.dev) to review pull requests: intake/triage, single-pass multi-lens `diff-review`, person-confirmed formal GitHub PR reviews with inline comments, per-host protocols, and consolidated merge-readiness reporting. | Root `SKILL.md` + 7 workflow runbooks under `references/` + 4 host protocols under `references/protocols/`. |
 | [`herdr`](./skills/herdr/SKILL.md) | Inspects and controls panes, tabs, workspaces, and agents running under the Herdr workspace manager via the `herdr` CLI. | Standalone `SKILL.md`. |
 | [`implement`](./skills/implement/SKILL.md) | Implements a single issue, spec, or task end-to-end in one session: branch/worktree setup, mandatory `grill-me`, optional `plan-review`, checks/tests, multi-lens `diff-review` loop, and PR creation without Herdr or multi-agent overhead. | Standalone `SKILL.md`. |
 | [`grill-me`](./skills/grill-me/SKILL.md) | Interrogates a spec, plan, or design one hard question at a time to expose gaps and undecided trade-offs, then writes the decisions back. Used by every `multi-implement` worker at startup. | Standalone `SKILL.md`. |
@@ -138,6 +142,21 @@ skills/
 │       ├── review.md
 │       ├── topology.md
 │       └── worker-prompts.md
+├── multi-review/
+│   ├── SKILL.md
+│   └── references/
+│       ├── agent-effort.md
+│       ├── cleanup.md
+│       ├── coordinator-rules.md
+│       ├── intake-and-triage.md
+│       ├── protocols/
+│       │   ├── agy.md
+│       │   ├── claude.md
+│       │   ├── fallback.md
+│       │   └── kiro.md
+│       ├── reporting-protocol.md
+│       ├── topology.md
+│       └── worker-review.md
 ├── plan-review/
 │   ├── SKILL.md
 │   └── references/

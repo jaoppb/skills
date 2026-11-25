@@ -499,6 +499,103 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertEqual((opus, sonnet), ("auto", "auto"))
         self.assertIn("not logged in", stderr.getvalue())
 
+    def test_extra_tools_config_scopes_roles_preserves_readonly_lenses_and_tracks_hash(self) -> None:
+        # Missing default config (<out-dir>/../multi-implement.json) produces base tools with no blank line
+        self.assertEqual(self.run_cli()[0], 0)
+        coord_path = self.out_dir / "multi-implement-coordinator.md"
+        worker_path = self.out_dir / "multi-implement-worker.md"
+        self.assertIn(
+            "tools:\n  - read\n  - write\n  - shell\n  - subagent\n---\n",
+            coord_path.read_text(encoding="utf-8"),
+        )
+
+        # Adding <out-dir>/../multi-implement.json makes existing coordinator/worker stale (exit 1),
+        # while read-only diff-review-* and plan-review-* profiles stay up-to-date (ok)
+        config_path = self.tmp_path / "multi-implement.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "extra_tools": {
+                        "shared": ["read", "@context7", "web_search"],
+                        "coordinator": ["@atlassian", "@context7"],
+                        "worker": ["@playwright/browser_click"],
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        code, out, err = self.run_cli("--check")
+        self.assertEqual(code, 1, msg=err)
+        self.assertIn(f"stale   {coord_path}", out)
+        self.assertIn(f"stale   {worker_path}", out)
+        self.assertIn(f"ok      {self.out_dir / 'diff-review-code-quality.md'}", out)
+        self.assertIn(f"ok      {self.out_dir / 'plan-review-plan-quality.md'}", out)
+
+        # Re-sync succeeds without --force (no hand-edit conflict) and --check passes
+        code_sync, _, err_sync = self.run_cli()
+        self.assertEqual(code_sync, 0, msg=err_sync)
+        self.assertEqual(self.run_cli("--check")[0], 0)
+
+        coord_fm = coord_path.read_text(encoding="utf-8").split("---", 2)[1]
+        worker_fm = worker_path.read_text(encoding="utf-8").split("---", 2)[1]
+        self.assertIn(
+            'tools:\n  - read\n  - write\n  - shell\n  - subagent\n  - "@context7"\n  - "web_search"\n  - "@atlassian"\n',
+            coord_fm,
+        )
+        self.assertNotIn("@playwright/browser_click", coord_fm)
+        self.assertIn(
+            'tools:\n  - read\n  - write\n  - shell\n  - subagent\n  - "@context7"\n  - "web_search"\n  - "@playwright/browser_click"\n',
+            worker_fm,
+        )
+        self.assertNotIn("@atlassian", worker_fm)
+
+        # Read-only lens profiles never receive extra tools
+        for lens_file in list(self.out_dir.glob("diff-review-*.md")) + list(self.out_dir.glob("plan-review-*.md")):
+            fm = lens_file.read_text(encoding="utf-8").split("---", 2)[1]
+            self.assertIn("\ntools:\n  - read\n", fm)
+            self.assertNotIn("@atlassian", fm)
+            self.assertNotIn("@context7", fm)
+
+        # Explicit --config overrides the default <out-dir>/../multi-implement.json
+        override_cfg = self.tmp_path / "override.json"
+        override_cfg.write_text(json.dumps({"extra_tools": {"coordinator": ["@jira"]}}), encoding="utf-8")
+        self.assertEqual(self.run_cli("--config", str(override_cfg))[0], 0)
+        self.assertEqual(self.run_cli("--config", str(override_cfg), "--check")[0], 0)
+        coord_override_fm = coord_path.read_text(encoding="utf-8").split("---", 2)[1]
+        self.assertIn('  - "@jira"\n', coord_override_fm)
+        self.assertNotIn("@atlassian", coord_override_fm)
+
+    def test_extra_tools_config_rejects_missing_explicit_malformed_unknown_keys_and_unsafe_tools(self) -> None:
+        missing = self.tmp_path / "does-not-exist.json"
+        code, _, err = self.run_cli("--config", str(missing))
+        self.assertEqual(code, 1)
+        self.assertIn("config file not found", err)
+
+        bad_cases = [
+            ("{not json", "invalid JSON"),
+            ("[]", "JSON object"),
+            (json.dumps({"extraTools": {}}), "unknown key"),
+            (json.dumps({"extra_tools": []}), "must be a JSON object"),
+            (json.dumps({"extra_tools": {"coordinators": ["@atlassian"]}}), "unknown extra_tools key"),
+            (json.dumps({"extra_tools": {"coordinator": "@atlassian"}}), "must be a JSON array"),
+            (json.dumps({"extra_tools": {"worker": [123]}}), "invalid tool identifier"),
+            (json.dumps({"extra_tools": {"coordinator": ["*"]}}), "invalid tool identifier"),
+            (json.dumps({"extra_tools": {"coordinator": ["@*"]}}), "invalid tool identifier"),
+            (json.dumps({"extra_tools": {"coordinator": ["@atlassian/*"]}}), "invalid tool identifier"),
+            (json.dumps({"extra_tools": {"coordinator": ["@atlassian\ntools: ['*']"]}}), "invalid tool identifier"),
+            (json.dumps({"extra_tools": {"worker": ["@atlassian/a/b"]}}), "invalid tool identifier"),
+            (json.dumps({"extra_tools": {"worker": ["@atlassian/"]}}), "invalid tool identifier"),
+            (json.dumps({"extra_tools": {"worker": ["bad tool"]}}), "invalid tool identifier"),
+            (json.dumps({"extra_tools": {"worker": ['"quoted"']}}), "invalid tool identifier"),
+        ]
+        cfg = self.tmp_path / "bad.json"
+        for idx, (payload, expected_err) in enumerate(bad_cases):
+            with self.subTest(case=idx, expected_err=expected_err):
+                cfg.write_text(payload, encoding="utf-8")
+                code, _, err = self.run_cli("--config", str(cfg))
+                self.assertEqual(code, 1)
+                self.assertIn(expected_err, err)
+
 
 if __name__ == "__main__":
     unittest.main()

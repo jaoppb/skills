@@ -17,6 +17,20 @@ Handle the exit code strictly:
 - **Exit `1` (`missing` or `stale` profiles)**: Run `python3 <skill-dir>/scripts/sync_kiro_agents.py` once to install or refresh untouched managed profiles automatically. If that run fails, stop and ask the person (ending with `[WAITING-FOR-PERSON]`, or using your coordinator protocol's blocking ask tool if the coordinator is not `kiro`).
 - **Exit `1` (`error:` — missing `kiro-cli`, unavailable Opus/Sonnet tier, or missing companion `diff-review` / `plan-review` skill) or Exit `2` (hand-edited/unmanaged `multi-implement-*.md`, `diff-review-*.md`, or `plan-review-*.md` conflict, or unsafe symlink/non-directory/non-regular target)**: **Never** pass `--force` or `--allow-auto-fallback` silently. Report the exact error to the person and ask whether to pass explicit `--opus-model` / `--sonnet-model`, `--allow-auto-fallback`, or `--force` (ending with `[WAITING-FOR-PERSON]`, or using your coordinator protocol's blocking ask tool if the coordinator is not `kiro`).
 
+To expose machine-local MCP servers (such as `@atlassian`) or extra non-wildcard tools to `multi-implement-coordinator` and/or `multi-implement-worker` without triggering hand-edit conflicts, configure `<out-dir>/../multi-implement.json` (default `~/.kiro/multi-implement.json`, or `--config <path>`):
+
+```json
+{
+  "extra_tools": {
+    "shared": [],
+    "coordinator": ["@atlassian"],
+    "worker": []
+  }
+}
+```
+
+Both `sync_kiro_agents.py --check` and normal sync read this file automatically and include the extras in the managed SHA-256 hash; read-only `diff-review-*` and `plan-review-*` profiles are never modified.
+
 ## 2. Startup & Model Flags
 
 Resolve exact available Claude model slugs on the host using:

@@ -457,10 +457,8 @@ def atomic_write(path: Path, content: str, mode: int) -> None:
 def is_managed_namespace(filename: str) -> bool:
     return filename.endswith(".md") and (
         filename.startswith("multi-implement-")
-        or filename.startswith("herdr-")
         or filename.startswith("diff-review-")
         or filename.startswith("plan-review-")
-        or filename.startswith("review-")
     )
 
 

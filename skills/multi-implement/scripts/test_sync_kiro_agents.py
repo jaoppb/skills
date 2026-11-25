@@ -183,29 +183,31 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertIn("would write", out)
         self.assertFalse(self.out_dir.exists())
 
-        # Real sync writes 20 .md files (2 herdr-* + 13 diff-review-* + 5 plan-review-*) and zero .json files
+        # Real sync writes 20 .md files (2 multi-implement-* + 13 diff-review-* + 5 plan-review-*) and zero .json files
         code, _, err = self.run_cli()
         self.assertEqual(code, 0, msg=err)
         written = sorted(p.name for p in self.out_dir.iterdir())
         self.assertEqual(len(written), 20)
         self.assertTrue(all(name.endswith(".md") for name in written))
-        self.assertIn("herdr-coordinator.md", written)
-        self.assertIn("herdr-worker.md", written)
+        self.assertIn("multi-implement-coordinator.md", written)
+        self.assertIn("multi-implement-worker.md", written)
 
         # --check now exits 0
         code, _, err = self.run_cli("--check")
         self.assertEqual(code, 0, msg=err)
 
         # Verify coordinator & worker models and subagent capability
-        coord = (self.out_dir / "herdr-coordinator.md").read_text(encoding="utf-8")
-        worker = (self.out_dir / "herdr-worker.md").read_text(encoding="utf-8")
-        self.assertTrue(coord.startswith("---\nname: herdr-coordinator\n"))
+        coord = (self.out_dir / "multi-implement-coordinator.md").read_text(encoding="utf-8")
+        worker = (self.out_dir / "multi-implement-worker.md").read_text(encoding="utf-8")
+        self.assertTrue(coord.startswith("---\nname: multi-implement-coordinator\n"))
+        self.assertIn("<!-- multi-implement-managed: sha256=", coord)
         self.assertIn("\nmodel: claude-sonnet-4.6\n", coord)
         self.assertIn("  - subagent\n", coord)
         self.assertIn("references/dependency-graph.md", coord)
         self.assertIn("all its blockers", coord)
         self.assertNotIn("wave", coord.lower())
-        self.assertTrue(worker.startswith("---\nname: herdr-worker\n"))
+        self.assertTrue(worker.startswith("---\nname: multi-implement-worker\n"))
+        self.assertIn("<!-- multi-implement-managed: sha256=", worker)
         # Default Preset 2 runs workers on the Fast tier: the worker profile pins Sonnet, not Opus
         self.assertIn("\nmodel: claude-sonnet-4.6\n", worker)
         self.assertNotIn("\nmodel: claude-opus-4.6\n", worker)
@@ -305,8 +307,8 @@ class SyncAndProvenanceTests(unittest.TestCase):
 
     def test_unmanaged_namespaced_file_and_symlink_target_are_refused(self) -> None:
         self.out_dir.mkdir(parents=True, exist_ok=True)
-        unmanaged = self.out_dir / "herdr-worker.md"
-        unmanaged.write_text("---\nname: herdr-worker\n---\nUser-authored.\n", encoding="utf-8")
+        unmanaged = self.out_dir / "multi-implement-worker.md"
+        unmanaged.write_text("---\nname: multi-implement-worker\n---\nUser-authored.\n", encoding="utf-8")
 
         code, _, err = self.run_cli()
         self.assertEqual(code, 2)
@@ -328,6 +330,30 @@ class SyncAndProvenanceTests(unittest.TestCase):
         self.assertEqual(code_force, 2)
         self.assertIn("symlink target refused", err_force)
         self.assertEqual(victim.read_text(encoding="utf-8"), "do not touch")
+
+    def test_legacy_provenance_marker_is_rejected_without_fallback_until_force(self) -> None:
+        self.out_dir.mkdir(parents=True, exist_ok=True)
+        target = self.out_dir / "diff-review-code-quality.md"
+        unmarked = "---\nname: diff-review-code-quality\n---\nLegacy body.\n"
+        digest = ska.sha256(unmarked)
+        header = "---\nname: diff-review-code-quality\n---\n"
+        legacy_text = f"{header}<!-- herdr-multi-agent-managed: sha256={digest} -->\nLegacy body.\n"
+        target.write_text(legacy_text, encoding="utf-8")
+
+        code_check, _, err_check = self.run_cli("--check")
+        self.assertEqual(code_check, 2)
+        self.assertIn("unmanaged file", err_check)
+
+        code_sync, _, err_sync = self.run_cli()
+        self.assertEqual(code_sync, 2)
+        self.assertIn("--force", err_sync)
+        self.assertEqual(target.read_text(encoding="utf-8"), legacy_text)
+
+        self.assertEqual(self.run_cli("--force")[0], 0)
+        updated = target.read_text(encoding="utf-8")
+        self.assertIn("<!-- multi-implement-managed: sha256=", updated)
+        self.assertNotIn("herdr-multi-agent-managed", updated)
+        self.assertEqual(self.run_cli("--check")[0], 0)
 
     def test_missing_review_dirs_fail_loud_and_print_models_outputs_json(self) -> None:
         code, out, _ = self.run_cli("--print-models")
@@ -452,14 +478,14 @@ class SyncAndProvenanceTests(unittest.TestCase):
 
     def test_obsolete_managed_profile_emits_stale_warning(self) -> None:
         self.assertEqual(self.run_cli()[0], 0)
-        obsolete = self.out_dir / "review-legacy.md"
+        obsolete = self.out_dir / "multi-implement-legacy.md"
         obsolete.write_text(
-            ska.render_with_provenance("---\nname: review-legacy\n---\nOld.\n", {}),
+            ska.render_with_provenance("---\nname: multi-implement-legacy\n---\nOld.\n", {}),
             encoding="utf-8",
         )
         code_obs, out_obs, _ = self.run_cli("--check")
         self.assertEqual(code_obs, 0)
-        self.assertIn("review-legacy.md was generated by an older herdr-multi-agent version", out_obs)
+        self.assertIn("multi-implement-legacy.md was generated by an older multi-implement version", out_obs)
         self.assertTrue(obsolete.exists())
 
     def test_kiro_cli_nonzero_exit_fails_loud_or_warns_with_fallback(self) -> None:

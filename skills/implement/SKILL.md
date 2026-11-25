@@ -1,6 +1,6 @@
 ---
 name: implement
-description: "Implement a single issue, spec, or task end-to-end in one agent session: intake and branch setup, mandatory grill-me interrogation, optional plan-review, implementation with checks and tests, multi-lens diff-review loop via fresh read-only sub-agents until zero blocker and zero material findings, and automated PR creation stopping before merge. Use only when the user explicitly invokes implement or hands over a whole GitHub issue, local spec/plan file, or task to deliver end-to-end as a branch and PR. Do not use for ad-hoc in-session edits, refactors, or \"write this function\" requests, parallel multi-issue orchestration across Herdr worktrees (use herdr-multi-agent), standalone diff/PR reviews without implementing (use diff-review), standalone spec interrogation without implementing (use grill-me), pre-implementation plan/RFC reviews (use plan-review), whole-codebase audits (use codebase-audit), or read-only Q&A and debugging inquiries."
+description: "Implement a single issue, spec, or task end-to-end in one agent session: intake and branch setup, mandatory grill-me interrogation, optional plan-review, implementation with checks and tests, multi-lens diff-review loop via fresh read-only sub-agents until zero blocker and zero material findings, and automated PR creation stopping before merge. Use only when the user explicitly invokes implement or hands over a whole GitHub issue, local spec/plan file, or task to deliver end-to-end as a branch and PR. Do not use for ad-hoc in-session edits, refactors, or \"write this function\" requests, parallel multi-issue orchestration across Herdr worktrees (use multi-implement), standalone diff/PR reviews without implementing (use diff-review), standalone spec interrogation without implementing (use grill-me), pre-implementation plan/RFC reviews (use plan-review), whole-codebase audits (use codebase-audit), or read-only Q&A and debugging inquiries."
 ---
 
 # Implement
@@ -30,7 +30,7 @@ Run `grill-me` with the user before writing any code to sharpen scope, edge case
 
 - **Skip only when:** the target artifact already contains confirmed `grill-me` decisions (`Decisions` / `Non-goals`) that remain current, or the user explicitly waives grilling. Even then, stop and confirm if you uncover an unaddressed contradiction or blocker.
 - **Writeback (per `grill-me`):** write confirmed `Decisions`, `Non-goals`, `Open questions`, and `Risks` back in place to the GitHub issue or local spec file before coding, or output them in chat when working from a prompt only.
-- **Oversized input:** if grilling (or `plan-review`) shows the task holds multiple independent deliverables, stop and let the user choose: narrow to one slice for this PR (the rest becomes follow-up issues), hand off to `herdr-multi-agent`, or proceed as a single PR on explicit confirmation. Never ship a silent mega-PR.
+- **Oversized input:** if grilling (or `plan-review`) shows the task holds multiple independent deliverables, stop and let the user choose: narrow to one slice for this PR (the rest becomes follow-up issues), hand off to `multi-implement`, or proceed as a single PR on explicit confirmation. Never ship a silent mega-PR.
 
 ### 3. Optional `plan-review` gate
 
@@ -66,7 +66,7 @@ Run `diff-review` against the branch diff (`git diff origin/<base>...HEAD`, or `
 
 | Need | Use instead |
 | :--- | :--- |
-| Multiple tasks/issues in parallel across Herdr worktrees | `herdr-multi-agent` |
+| Multiple tasks/issues in parallel across Herdr worktrees | `multi-implement` |
 | Review an existing diff, branch, or PR without implementing | `diff-review` |
 | Interrogate a spec or idea without implementing | `grill-me` |
 | Review a drafted plan, epic, or RFC before coding | `plan-review` |
